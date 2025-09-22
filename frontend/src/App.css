@@ -1,0 +1,106 @@
+.container {
+  display: flex;
+  height: 100vh;
+  width: 100vw;
+}
+
+.left {
+  flex: 1 1 50%; /* default 50% */
+  min-width: 150px; /* minimum width to show heading properly */
+  background: #ffffff;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 40px;
+  transition: flex-basis 0.3s ease, width 0.3s ease;
+}
+
+.left h1 {
+  font-size: clamp(2rem, 4vw, 3rem);
+  font-weight: bold;
+  color: #003366;
+  text-align: center;
+}
+
+.right {
+  flex: 1 1 50%; /* default 50% */
+  background: linear-gradient(to bottom right, #87cefa, #e6f7ff);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 40px;
+  transition: flex-basis 0.3s ease, width 0.3s ease;
+}
+
+/* Form box */
+.form-box {
+  background: white;
+  padding: 30px;
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+  width: 100%;
+  max-width: 400px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+/* Buttons & Select */
+.form-box select,
+.form-box button {
+  padding: 10px;
+  border-radius: 6px;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+}
+
+.form-box select {
+  border: 1px solid #ccc;
+  background-color: white;
+}
+
+.form-box select:focus,
+.form-box select:valid {
+  background-color: #f6f6f7;
+  color: rgb(7, 7, 7);
+}
+
+.form-box button {
+  background-color: #87cefa;
+  border: none;
+  color: white;
+  cursor: pointer;
+}
+
+.form-box button:hover {
+  background-color: #74a5ad;
+}
+
+/* Medium screens: shrink left side */
+@media (max-width: 1200px) {
+  .left {
+    flex-basis: 20%; /* only show heading area */
+    padding: 20px;
+  }
+  .right {
+    flex-basis: 80%;
+  }
+}
+
+/* Small screens: left becomes a top strip, right full width */
+@media (max-width: 768px) {
+  .container {
+    flex-direction: column;
+  }
+  .left {
+    width: 100%;
+    height: auto;
+    padding: 20px;
+    text-align: center;
+  }
+  .right {
+    width: 100%;
+    height: calc(100vh - 60px); /* adjust remaining height after heading */
+    padding: 40px;
+  }
+}
