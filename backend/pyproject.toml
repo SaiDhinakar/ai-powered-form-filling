@@ -6,9 +6,11 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "fastapi[standard]>=0.116.2",
-    "numpy>=2.3.3",
+    "fasttext>=0.9.3",
+    "numpy<2",
     "paddleocr>=3.2.0",
     "paddlepaddle>=2.5.1",
+    "pyrefly>=0.42.3",
     "python-multipart>=0.0.20",
     "uvicorn[standard]>=0.35.0",
 ]
