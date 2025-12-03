@@ -1,4 +1,3 @@
-from src.lang_detect.language_detector import detect as detect_language
+"""FastAPI Backend for AI-Powered Form Filling Application."""
 
-
-__all__ = ["detect_language"]
+__version__ = "0.1.0"
