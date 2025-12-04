@@ -34,6 +34,20 @@ class Settings(BaseSettings):
     MAX_UPLOAD_SIZE: int = 10 * 1024 * 1024  # 10 MB
     ALLOWED_EXTENSIONS: set[str] = {".pdf", ".png", ".jpg", ".jpeg", ".tiff", ".bmp"}
     
+    # Embeddings & Vector Storage
+    EMBEDDING_MODEL_NAME: str = "all-MiniLM-L6-v2"
+    CHROMA_PERSIST_DIR: str = "./chroma_db"
+    CHROMA_COLLECTION_PREFIX: str = "entities"
+    
+    # Background Tasks (Celery)
+    CELERY_BROKER_URL: str = "redis://localhost:6379/0"
+    CELERY_RESULT_BACKEND: str = "redis://localhost:6379/0"
+    
+    # Redis
+    REDIS_HOST: str = "localhost"
+    REDIS_PORT: int = 6379
+    REDIS_DB: int = 0
+    
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

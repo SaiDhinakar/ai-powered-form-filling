@@ -51,14 +51,16 @@ def validate_file_size(file_size: int) -> bool:
 @router.post("/upload", response_model=FileUploadResponse, status_code=status.HTTP_201_CREATED)
 async def upload_file(
     file: UploadFile = File(...),
+    entity_id: int = Query(..., ge=100000, le=999999, description="Entity ID (6-digit)"),
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """
-    Upload a document file to MinIO storage.
+    Upload a document file to MinIO storage and trigger background processing.
     
     Args:
         file: Uploaded file
+        entity_id: Entity ID to associate this file with (6-digit)
         user: Current authenticated user
         db: Database session
         
@@ -68,6 +70,18 @@ async def upload_file(
     Raises:
         HTTPException: If validation fails or upload fails
     """
+    # Verify entity exists and belongs to user
+    from src.models.entity import Entity
+    entity = db.query(Entity).filter(
+        Entity.id == entity_id,
+        Entity.user_id == user.id
+    ).first()
+    
+    if not entity:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Entity {entity_id} not found"
+        )
     # Validate file extension
     if not validate_file_extension(file.filename):
         raise HTTPException(
@@ -131,7 +145,7 @@ async def upload_file(
     db.commit()
     db.refresh(file_upload)
     
-    # Create processing job (will be triggered by separate service later)
+    # Create processing job
     processing_job = ProcessingJob(
         session_id=session_id,
         file_id=file_upload.id,
@@ -140,6 +154,22 @@ async def upload_file(
     
     db.add(processing_job)
     db.commit()
+    
+    # Trigger background processing task for PDF extraction
+    try:
+        from src.tasks.processing_tasks import process_pdf_task
+        
+        # Only process PDFs for now
+        if file.filename.lower().endswith('.pdf'):
+            process_pdf_task.delay(
+                file_id=file_upload.id,
+                entity_id=entity_id,
+                user_id=user.id
+            )
+            logger.info(f"Triggered background processing for file {file_upload.id}")
+    except Exception as e:
+        logger.error(f"Failed to trigger background task: {e}")
+        # Don't fail the upload if background task fails
     
     return file_upload
 

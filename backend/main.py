@@ -9,7 +9,8 @@ import logging
 from src.core.config import settings
 from src.core.database import init_db
 from src.services.minio_service import minio_service
-from src.api import auth, files, health
+from src.services.embedding_service import embedding_service
+from src.api import auth, files, health, entities
 
 # Configure logging
 logging.basicConfig(
@@ -46,6 +47,14 @@ async def lifespan(app: FastAPI):
         logger.error(f"Failed to initialize MinIO: {e}")
         raise
     
+    # Initialize embedding service and ChromaDB
+    try:
+        embedding_service.initialize()
+        logger.info("Embedding service initialized successfully")
+    except Exception as e:
+        logger.error(f"Failed to initialize embedding service: {e}")
+        raise
+    
     logger.info("Application startup complete")
     
     yield
@@ -76,6 +85,7 @@ app.add_middleware(
 # Include routers
 app.include_router(health.router)
 app.include_router(auth.router)
+app.include_router(entities.router)
 app.include_router(files.router)
 
 

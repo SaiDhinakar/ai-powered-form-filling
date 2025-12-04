@@ -60,5 +60,15 @@ htmlcov/
 minio-data/
 minio/
 
+# ChromaDB vector storage
+chroma_db/
+
+# Redis data
+redis-data/
+
 # Model files
 src/lang_detect/*.ftz
+
+# Celery
+celerybeat-schedule
+celerybeat.pid
