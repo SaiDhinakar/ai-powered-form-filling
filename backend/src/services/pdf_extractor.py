@@ -7,8 +7,20 @@ import io
 
 import pdfplumber
 from PIL import Image
+from paddleocr import PaddleOCR
 
 logger = logging.getLogger(__name__)
+
+# Initialize PaddleOCR (will be lazy-loaded)
+_ocr_instance = None
+
+def get_ocr():
+    """Get or initialize OCR instance (lazy loading)."""
+    global _ocr_instance
+    if _ocr_instance is None:
+        logger.info("Initializing PaddleOCR for image text extraction")
+        _ocr_instance = PaddleOCR(use_angle_cls=True, lang='en', show_log=False)
+    return _ocr_instance
 
 
 class PDFExtractionResult:
@@ -164,9 +176,45 @@ class PDFExtractor:
                 
                 # Combine all text
                 result.text = "\n\n".join(all_text_parts)
-                result.success = True
                 
-                logger.info(f"Successfully extracted PDF from bytes: {result.total_pages} pages")
+                # If no text was extracted, try OCR on page images
+                if not result.text or len(result.text.strip()) < 50:
+                    logger.info("No text extracted, attempting OCR on page images")
+                    ocr_text_parts = []
+                    
+                    try:
+                        ocr = get_ocr()
+                        # Convert each page to image and OCR it
+                        for page_num, page in enumerate(pdf.pages, start=1):
+                            try:
+                                # Convert page to image
+                                img = page.to_image(resolution=150)
+                                img_bytes = io.BytesIO()
+                                img.original.save(img_bytes, format='PNG')
+                                img_bytes.seek(0)
+                                
+                                # Perform OCR
+                                result_ocr = ocr.ocr(img_bytes.getvalue(), cls=True)
+                                
+                                if result_ocr and result_ocr[0]:
+                                    page_text = " ".join([line[1][0] for line in result_ocr[0] if line[1][0]])
+                                    if page_text:
+                                        ocr_text_parts.append(f"[Page {page_num}]\n{page_text}")
+                                        # Update page data
+                                        result.pages[page_num - 1]["text"] = page_text
+                                        
+                            except Exception as page_error:
+                                logger.warning(f"OCR failed for page {page_num}: {page_error}")
+                        
+                        if ocr_text_parts:
+                            result.text = "\n\n".join(ocr_text_parts)
+                            logger.info(f"OCR extracted {len(result.text)} characters from {len(ocr_text_parts)} pages")
+                        
+                    except Exception as ocr_error:
+                        logger.error(f"OCR processing failed: {ocr_error}")
+                
+                result.success = True
+                logger.info(f"Successfully extracted PDF from bytes: {result.total_pages} pages, {len(result.text)} chars")
                 
         except Exception as e:
             logger.error(f"Failed to extract PDF from bytes: {e}")

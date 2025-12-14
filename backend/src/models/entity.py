@@ -50,7 +50,7 @@ class Entity(Base):
     extracted_text = Column(Text, nullable=True)  # Full extracted text from PDF
     
     # Metadata storage (JSON for flexible data)
-    metadata = Column(JSON, nullable=True)  # Additional info: phone, email, address, etc.
+    entity_metadata = Column("metadata", JSON, nullable=True)  # Additional info: phone, email, address, etc.
     
     # Timestamps
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
@@ -90,7 +90,7 @@ class Entity(Base):
             user_id=user_id,
             name=name,
             extracted_text=extracted_text,
-            metadata=metadata or {}
+            entity_metadata=metadata or {}
         )
         
         return entity

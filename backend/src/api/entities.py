@@ -188,9 +188,9 @@ async def update_entity(
     
     if entity_data.metadata is not None:
         # Merge with existing metadata
-        existing_metadata = entity.metadata or {}
+        existing_metadata = entity.entity_metadata or {}
         existing_metadata.update(entity_data.metadata)
-        entity.metadata = existing_metadata
+        entity.entity_metadata = existing_metadata
     
     try:
         # Update embedding if text exists
@@ -201,7 +201,7 @@ async def update_entity(
                 text=entity.extracted_text,
                 metadata={
                     "name": entity.name,
-                    **(entity.metadata or {})
+                    **(entity.entity_metadata or {})
                 }
             )
         

@@ -20,7 +20,6 @@ Testing
 python -m unittest backend/tests/test_lang_detect.py
 ```
 
-
 Run commands:
 
 ```bash
@@ -33,3 +32,6 @@ uv run python -m fastapi dev main.py
 celery -A src.tasks worker --loglevel=info
 
 ```
+
+
+sudo apt install poppler-utils   # Linux

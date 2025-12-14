@@ -22,15 +22,17 @@ class EntityUpdate(BaseModel):
     metadata: Optional[Dict[str, Any]] = Field(None, description="Additional metadata")
 
 
-class EntityResponse(EntityBase):
+class EntityResponse(BaseModel):
     """Schema for entity response."""
     id: int = Field(..., ge=100000, le=999999, description="6-digit entity ID")
     user_id: int
+    name: str
+    metadata: Optional[Dict[str, Any]] = Field(default=None, alias="entity_metadata")
     extracted_text: Optional[str] = None
     created_at: datetime
     updated_at: datetime
     
-    model_config = {"from_attributes": True}
+    model_config = {"from_attributes": True, "populate_by_name": True}
 
 
 class EntityListResponse(BaseModel):

@@ -6,9 +6,11 @@ from celery import Task
 
 from src.tasks import celery_app
 from src.core.database import SessionLocal
+from src.models.user import User  # Import User model for relationships
 from src.models.file_upload import FileUpload
 from src.models.processing_job import ProcessingJob, ProcessingStatus
 from src.models.entity import Entity
+from src.models.session import Session as UserSession  # Import Session model
 from src.services.pdf_extractor import pdf_extractor
 from src.services.embedding_service import embedding_service
 from src.services.minio_service import minio_service
@@ -20,12 +22,20 @@ class DatabaseTask(Task):
     """Base task with database session management."""
     
     _db = None
+    _embedding_initialized = False
     
     @property
     def db(self):
         if self._db is None:
             self._db = SessionLocal()
         return self._db
+    
+    def before_start(self, task_id, args, kwargs):
+        """Initialize services before task starts."""
+        if not self._embedding_initialized:
+            logger.info("Initializing embedding service in Celery worker")
+            embedding_service.initialize()
+            self._embedding_initialized = True
     
     def after_return(self, *args, **kwargs):
         if self._db is not None:
@@ -104,8 +114,8 @@ def process_pdf_task(self, file_id: int, entity_id: int, user_id: int) -> dict:
         entity.extracted_text = extraction_result.text
         
         # Update entity metadata with extraction results
-        entity_metadata = entity.metadata or {}
-        entity_metadata.update({
+        existing_metadata = entity.entity_metadata or {}
+        existing_metadata.update({
             "pdf_pages": extraction_result.total_pages,
             "pdf_metadata": extraction_result.metadata,
             "has_tables": len(extraction_result.tables) > 0,
@@ -114,7 +124,7 @@ def process_pdf_task(self, file_id: int, entity_id: int, user_id: int) -> dict:
             "image_count": len(extraction_result.images),
             "character_count": len(extraction_result.text)
         })
-        entity.metadata = entity_metadata
+        entity.entity_metadata = existing_metadata
         
         # Generate and store embeddings
         if extraction_result.text and extraction_result.text.strip():
@@ -142,7 +152,8 @@ def process_pdf_task(self, file_id: int, entity_id: int, user_id: int) -> dict:
         processing_job.error_message = None
         
         # Update file upload status
-        file_upload.status = "processed"
+        from src.models.file_upload import FileStatus
+        file_upload.status = FileStatus.COMPLETED
         
         db.commit()
         

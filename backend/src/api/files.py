@@ -1,10 +1,13 @@
 """File upload router for handling document uploads."""
 
 import os
+import logging
 from pathlib import Path
-from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import func
+
+logger = logging.getLogger(__name__)
 
 from src.core.database import get_db
 from src.core.deps import get_current_user
