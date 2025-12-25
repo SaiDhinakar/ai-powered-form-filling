@@ -1,39 +1,44 @@
-import React from "react";
-import "./App.css";
-import Preview from './preview.jsx';
+import { Routes, Route, Navigate } from 'react-router-dom';
+import { useState } from 'react';
+import Layout from './components/Layout';
+import Login from './pages/Login';
+import Dashboard from './pages/Dashboard';
+import Entities from './pages/Entities';
+import FormFilling from './pages/FormFilling';
+import Templates from './pages/Templates';
+import RecentForms from './pages/RecentForms';
 
 function App() {
-  return (
-    <div className="container">
-      {/* Left side: Title only */}
-      <div className="left">
-        <h1>AI-Auto Form Filler</h1>
-      </div>
+  const [isAuthenticated, setIsAuthenticated] = useState(() => {
+    const auth = localStorage.getItem('isAuthenticated');
+    return auth === 'true';
+  });
 
-      {/* Right side: Form options */}
-      <div className="right">
-        <div className="form-box">
-          <label>Choose Government Form:</label>
-          <select>
-            <option>Select Form</option>
-            <option>Passport</option>
-            <option>Aadhaar</option>
-            <option>PAN</option>
-            <option>Voter ID</option>
-            <option>Driver License</option>
-            <option>Income Certificate</option>
-            <option>Marriage Certificate</option>
-            <option>Disability Certificate</option>
-            <option>Senior Citizen Certificate</option>
-            <option>GST Registration</option>
-            <option>Ration Card</option>
-            
-          </select>
-          <Preview/>
-          <button>Fill Form</button>
-        </div>
-      </div>
-    </div>
+  const handleLogin = () => {
+    localStorage.setItem('isAuthenticated', 'true');
+    setIsAuthenticated(true);
+  };
+
+  const handleLogout = () => {
+    localStorage.setItem('isAuthenticated', 'false');
+    setIsAuthenticated(false);
+  };
+
+  if (!isAuthenticated) {
+    return <Login onLogin={handleLogin} />;
+  }
+
+  return (
+    <Layout onLogout={handleLogout}>
+      <Routes>
+        <Route path="/" element={<Navigate to="/dashboard" replace />} />
+        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/entities" element={<Entities />} />
+        <Route path="/form-filling" element={<FormFilling />} />
+        <Route path="/templates" element={<Templates />} />
+        <Route path="/recent-forms" element={<RecentForms />} />
+      </Routes>
+    </Layout>
   );
 }
 
