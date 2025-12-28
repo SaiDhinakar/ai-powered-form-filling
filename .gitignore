@@ -23,6 +23,7 @@ ENV/
 *.egg
 *.log
 *.sqlite3
+*.db
 
 # IDEs
 .vscode/
@@ -32,3 +33,8 @@ ENV/
 # OS generated
 Thumbs.db
 .DS_Store
+
+outputs/
+uploads/
+temp/
+logs/*.log
