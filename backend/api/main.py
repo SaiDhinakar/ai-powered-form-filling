@@ -7,10 +7,9 @@ backend_dir = Path(__file__).parent.parent
 sys.path.insert(0, str(backend_dir))
 
 from api.v1.routers import auth, templates, form_fill
-from database.base import engine, Base
+from database import init_db
 
-# Create database tables
-Base.metadata.create_all(bind=engine)
+init_db()
 
 app = FastAPI(title="AI Powered Form Filling API", version="1.0.0")
 
