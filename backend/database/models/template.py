@@ -1,6 +1,6 @@
 from typing import Optional, TYPE_CHECKING
 from sqlalchemy import ForeignKey
-from datetime import datetime
+import datetime
 from sqlalchemy import String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -16,11 +16,10 @@ class Template(Base):
     Attributes:
         id: Primary key
         user_id: Foreign key to User
-        path: Path to the template file (PDF)
+        pdf_path: Path to the template file (PDF)
         file_hash: Hash of the template file for integrity
         lang: Language of the template
-        word: Path to the DOCX version of the template
-        html_code: HTML code of the template
+        word_path: Path to the DOCX version of the template
     """
     __tablename__ = "templates"
     
@@ -28,12 +27,11 @@ class Template(Base):
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     
     # Fields
-    path: Mapped[str] = mapped_column(Text, nullable=False)
+    pdf_path: Mapped[str] = mapped_column(Text, nullable=False)
     file_hash: Mapped[str] = mapped_column(String(64), unique=True, nullable=False, index=True)
     lang: Mapped[Optional[str]] = mapped_column(String(10), nullable=True)
-    word: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # Path to DOCX file
-    html_code: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow, nullable=False)
+    word_path: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # Path to DOCX file
+    created_at: Mapped[datetime.datetime] = mapped_column(default=datetime.datetime.now(datetime.timezone.utc), nullable=False)
     
     # Forigen key entity id
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
