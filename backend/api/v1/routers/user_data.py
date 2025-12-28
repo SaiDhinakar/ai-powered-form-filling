@@ -77,9 +77,9 @@ async def create_entity_data(
         with open(file_path, "wb") as f:
             f.write(file_content)
 
-        extract_and_save_organize_data(db, current_user.id, entity_id, file_path, lang=lang)
+        status = extract_and_save_organize_data(db, current_user.id, entity_id, file_path, lang=lang)
 
-        
+        return {"status": status}
 
     except Exception as e:
         raise HTTPException(

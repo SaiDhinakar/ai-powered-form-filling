@@ -4,8 +4,15 @@ from typing import Generator
 from dotenv import load_dotenv
 from sqlalchemy import create_engine
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
+from pathlib import Path
+import sys
 
-load_dotenv()
+# Add backend directory to Python path
+backend_dir = Path(__file__).parent.parent
+sys.path.insert(0, str(backend_dir))
+
+
+from config import settings
 
 
 class Base(DeclarativeBase):
@@ -14,11 +21,11 @@ class Base(DeclarativeBase):
 
 
 # Create database engine
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./app.db")
+# DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./app.db")
 engine = create_engine(
-    DATABASE_URL,
+    settings.DATABASE_URL,
     echo=True,
-    connect_args={"check_same_thread": False} if "sqlite" in DATABASE_URL else {}
+    connect_args={"check_same_thread": False} if "sqlite" in settings.DATABASE_URL else {}
 )
 
 # Create session factory

@@ -6,7 +6,6 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "fastapi[standard]>=0.128.0",
-    "fasttext>=0.9.3",
     "google-generativeai>=0.8.6",
     "numpy<2.0.0",
     "paddleocr>=3.3.2",
@@ -21,5 +20,5 @@ dependencies = [
     "passlib[bcrypt]>=1.7.4",
     "python-jose[cryptography]>=3.3.0",
     "googletrans>=4.0.2",
-]
+    "fillpdf>=0.7.3",
 ]

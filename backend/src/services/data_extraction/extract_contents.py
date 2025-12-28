@@ -9,10 +9,10 @@ sys.path.insert(0, str(backend_dir))
 
 from database.session import Session, get_db
 from database.repository import ExtractedDataRepository
-from src.services.data_extraction.pdf_extract import extract_text_from_pdf_with_metadata
+from src.services.data_extraction.pdf_extract import extract_text_from_pdf_or_img_with_metadata
 from config import settings
 
-def extract_and_save_organize_data(db_session, user_id: int, entity_id: int, pdf_path: str, lang: str = 'en'):
+def extract_and_save_organize_data(db_session, user_id: int, entity_id: int, file_path: str, lang: str = 'en'):
     """
     Extract data from a PDF and save it to the database.
     
@@ -20,10 +20,10 @@ def extract_and_save_organize_data(db_session, user_id: int, entity_id: int, pdf
         db_session: Database session
         user_id: ID of the user
         entity_id: ID of the entity
-        pdf_path: Path to the PDF file
+        file_path: Path to the file
     """
     try:
-        with open(pdf_path, 'rb') as f:
+        with open(file_path, 'rb') as f:
             file_hash = hashlib.sha256(f.read()).hexdigest()
     except Exception as e:
         status = 0
@@ -41,7 +41,7 @@ def extract_and_save_organize_data(db_session, user_id: int, entity_id: int, pdf
         extracted_toon_text = ''
         status = 0
         try:
-            extraction_result = extract_text_from_pdf_with_metadata(pdf_path, lang=lang)
+            extraction_result = extract_text_from_pdf_or_img_with_metadata(file_path, lang=lang)
             extracted_text = extraction_result.get('text', '')
             print(f"[DEBUG] Extraction result metadata: {extracted_text}")
             # metadata = extraction_result.get('metadata', {}) # Currently unused, can be used later
