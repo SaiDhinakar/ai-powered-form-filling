@@ -7,10 +7,16 @@ from jose import JWTError, jwt
 from passlib.context import CryptContext
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
+from pathlib import Path
+import sys
 
-from ....database.base import get_db
-from ....database.repository import UserRepository
-from ....database.models import User
+# Add backend directory to Python path
+backend_dir = Path(__file__).parent.parent.parent.parent
+sys.path.insert(0, str(backend_dir))
+
+from database.base import get_db
+from database.repository import UserRepository
+from database.models import User
 
 # Configuration
 SECRET_KEY = ""  # Should load from env

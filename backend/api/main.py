@@ -1,6 +1,13 @@
 from fastapi import FastAPI
-from backend.api.v1.routers import auth, templates, form_fill
-from backend.database.base import engine, Base
+from pathlib import Path
+import sys
+
+# Add backend directory to Python path
+backend_dir = Path(__file__).parent.parent
+sys.path.insert(0, str(backend_dir))
+
+from api.v1.routers import auth, templates, form_fill
+from database.base import engine, Base
 
 # Create database tables
 Base.metadata.create_all(bind=engine)
