@@ -23,6 +23,7 @@ ENV/
 *.egg
 *.log
 *.sqlite3
+*.db
 
 # IDEs
 .vscode/

@@ -32,7 +32,7 @@ class ExtractedData(Base):
     
     # Fields
     status: Mapped[int] = mapped_column(Integer, default=0, nullable=False)  # 1=success, 0=pending/failed
-    file_hash: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    file_hash: Mapped[str] = mapped_column(String(64), unique=True, nullable=False, index=True)
     extracted_toon_object: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
     
     # Relationships
