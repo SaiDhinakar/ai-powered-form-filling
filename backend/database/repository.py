@@ -118,15 +118,18 @@ class TemplateRepository:
         path: str,
         file_hash: str,
         lang: Optional[str] = None,
-        word: Optional[str] = None
+        form_fields: Optional[dict] = None,
+        pdf_data: Optional[dict] = None
     ) -> Template:
         """Create a new template."""
+        import json
         template = Template(
             user_id=user_id,
-            path=path,
+            pdf_path=path,
             file_hash=file_hash,
             lang=lang,
-            word=word
+            form_fields=json.dumps(form_fields) if form_fields is not None else None,
+            pdf_data=json.dumps(pdf_data) if pdf_data is not None else None
         )
         db.add(template)
         db.commit()
@@ -144,9 +147,9 @@ class TemplateRepository:
         return db.query(Template).filter(Template.file_hash == file_hash).first()
     
     @staticmethod
-    def get_all(db: Session, skip: int = 0, limit: int = 100) -> List[Template]:
+    def get_all(db: Session, user_id: int, skip: int = 0, limit: int = 10) -> List[Template]:
         """Get all templates with pagination."""
-        return db.query(Template).offset(skip).limit(limit).all()
+        return db.query(Template).filter(Template.user_id == user_id).offset(skip).limit(limit).all()
     
     @staticmethod
     def delete(db: Session, template_id: int) -> bool:

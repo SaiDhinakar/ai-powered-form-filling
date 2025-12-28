@@ -19,7 +19,8 @@ class Template(Base):
         pdf_path: Path to the template file (PDF)
         file_hash: Hash of the template file for integrity
         lang: Language of the template
-        word_path: Path to the DOCX version of the template
+        form_fields: JSON field storing form field metadata
+        pdf_data: Extracted pdf data for additional informations (incase fields missed the checkbox, radio keys)
     """
     __tablename__ = "templates"
     
@@ -30,7 +31,8 @@ class Template(Base):
     pdf_path: Mapped[str] = mapped_column(Text, nullable=False)
     file_hash: Mapped[str] = mapped_column(String(64), unique=True, nullable=False, index=True)
     lang: Mapped[Optional[str]] = mapped_column(String(10), nullable=True)
-    word_path: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # Path to DOCX file
+    form_fields: Mapped[Optional[dict]] = mapped_column(Text, nullable=True)  # JSON stored as text
+    pdf_data: Mapped[Optional[dict]] = mapped_column(Text, nullable=True)  # JSON stored as text
     created_at: Mapped[datetime.datetime] = mapped_column(default=datetime.datetime.now(datetime.timezone.utc), nullable=False)
     
     # Forigen key entity id
