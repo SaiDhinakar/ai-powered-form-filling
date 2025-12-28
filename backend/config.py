@@ -13,7 +13,8 @@ class Settings:
     ALGORITHM: str = os.getenv("ALGORITHM", "HS256")
     ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "30"))
     UPLOAD_FILE_PATH: str = os.getenv("UPLOAD_FILE_PATH", "./uploads")
-    AGENTS_API_ENDPOINT: str = os.getenv("AGENTS_API_ENDPOINT", "http://localhost:8907/agent/extract-data/")
+    OUTPUT_FILE_PATH: str = os.getenv("OUTPUT_FILE_PATH", "./outputs")
+    AGENTS_API_ENDPOINT: str = os.getenv("AGENTS_API_ENDPOINT", "http://localhost:8907/agent")
     # ENTITY_DATA_STORAGE = MinioService(
     #     endpoint=MINIO_ENDPOINT,
     #     access_key=MINIO_ACCESS_KEY,

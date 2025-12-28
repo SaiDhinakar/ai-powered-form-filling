@@ -4,6 +4,7 @@ import os
 from fillpdf.fillpdfs import write_fillable_pdf, get_form_fields
 
 def fill_pdf_form(input_pdf: str, output_pdf: str, form_data: dict):
+    print(f"Form data to fill: {form_data}")
     if not os.path.exists(input_pdf):
         print(f"Error: {input_pdf} not found.")
         return

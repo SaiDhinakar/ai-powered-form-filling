@@ -55,7 +55,7 @@ def extract_and_save_organize_data(db_session, user_id: int, entity_id: int, fil
         else:
             try:
                 response = requests.post(
-                            url=f"{settings.AGENTS_API_ENDPOINT}",
+                            url=f"{settings.AGENTS_API_ENDPOINT}/extract-data/",
                             params={
                                 "document_text": extracted_text,
                                 "lang": lang

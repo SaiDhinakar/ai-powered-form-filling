@@ -1,4 +1,5 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Body, Form
+from typing import Dict, Any
 from pathlib import Path
 import sys
 
@@ -6,7 +7,7 @@ import sys
 backend_dir = Path(__file__).parent.parent
 sys.path.insert(0, str(backend_dir))
 
-from ai_agents.agent import extract_data
+from ai_agents.agent import extract_data, fill_form
 
 app = FastAPI(title="Agent Service", version="1.0.0")
 
@@ -30,5 +31,29 @@ def extract_data_endpoint(document_text: str, lang: str):
         extracted_toon_text = extract_data(document_text, lang)
         print(f"[DEBUG] Extracted TOON Data: {extracted_toon_text}")
         return {"extracted_data": extracted_toon_text}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/agent/fill-form/")
+def fill_form_endpoint(
+    pdf_form_map: Dict[str, Any] = Body(...),
+    pdf_text: str = Body(...),
+    template_lang: str = Body(...),
+    entity_data: Dict[str, Any] = Body(...)
+):
+    """
+    Endpoint to fill PDF form fields using AI agent.
+    Args:
+        pdf_form_map (dict): Mapping of PDF form fields with empty/default values.
+        pdf_text (str): Extracted text from the PDF document.
+        template_lang (str): Language code of the template.
+        entity_data (dict): Canonical entity values in English.
+    Returns:
+        dict: Filled PDF form fields.
+    """
+    try:
+        filled = fill_form(pdf_form_map, pdf_text, template_lang, entity_data)
+        return {"filled_form": filled}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

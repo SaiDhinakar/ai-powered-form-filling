@@ -20,6 +20,7 @@ def extract_text_from_pdf_or_img_with_metadata(file_path, lang: str) -> dict:
     Returns:
         Dictionary containing text and metadata
     """
+    ocr_url = os.getenv("OCR_ENDPOINT", "http://localhost:8001/extract_text/")
     file_path = str(file_path)
 
     if file_path.lower().endswith('.pdf'):
@@ -38,7 +39,7 @@ def extract_text_from_pdf_or_img_with_metadata(file_path, lang: str) -> dict:
             doc = fitz.open(file_path)
             result['num_pages'] = len(doc)
             text_content = []
-
+            print(f"Extracting text from PDF: {file_path} with lang={lang}")
             if lang == 'en':
                 result['metadata'] = doc.metadata
                 for page in doc:
@@ -49,8 +50,7 @@ def extract_text_from_pdf_or_img_with_metadata(file_path, lang: str) -> dict:
                 result['text'] = '\n'.join(text_content)
                 doc.close()
             else:            
-                ocr_url = os.getenv("OCR_ENDPOINT", "http://localhost:3105/extract_text/")
-                
+                print(f"Using OCR service at {ocr_url} for non-English extraction")
                 # Extract each page as an image and send to OCR service
                 for page_num in range(len(doc)):
                     page = doc[page_num]
@@ -71,7 +71,7 @@ def extract_text_from_pdf_or_img_with_metadata(file_path, lang: str) -> dict:
                     
                     try:
                         # Call OCR service
-                        response = requests.post(ocr_url, files=files, params=params, timeout=30)
+                        response = requests.post(ocr_url, files=files, params=params, timeout=120)
                         
                         if response.status_code == 200:
                             ocr_result = response.json()
@@ -94,7 +94,6 @@ def extract_text_from_pdf_or_img_with_metadata(file_path, lang: str) -> dict:
             raise Exception(f"Error extracting text from PDF: {str(e)}")
     
     elif file_path.lower().endswith(('.png', '.jpg', '.jpeg', '.tiff', '.bmp')):
-        ocr_url = os.getenv("OCR_ENDPOINT", "http://localhost:3105/extract_text/")
         
         with open(file_path, 'rb') as img_file:
             files = {
@@ -107,7 +106,7 @@ def extract_text_from_pdf_or_img_with_metadata(file_path, lang: str) -> dict:
             }
             
             try:
-                response = requests.post(ocr_url, files=files, params=params, timeout=30)
+                response = requests.post(ocr_url, files=files, params=params, timeout=120)
                 
                 if response.status_code == 200:
                     ocr_result = response.json()

@@ -10,8 +10,10 @@ from src.services.data_extraction.pdf_extract import extract_text_from_pdf_or_im
 
 def get_template_metadata(pdf_path: str, lang: str = 'en') -> Dict[Dict[str, str], Dict[str, str]]:
     form_fileds = fillpdfs.get_form_fields(pdf_path)
+    print(f"OCR is running for language: {lang}")
     extracted_data = extract_text_from_pdf_or_img_with_metadata(pdf_path, lang)
     del extracted_data["metadata"]
+    print(f"Extracted data: {extracted_data}")
     return {
         "form_fields": form_fileds,
         "pdf_data": extracted_data

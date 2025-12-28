@@ -53,6 +53,7 @@ async def create_template(
         f.write(file_content)
 
     # Extract metadata
+    print(f"Extracting metadata for template {file_path} with lang={lang}")
     metadata = get_template_metadata(str(file_path), lang=lang or 'en')
     form_fields = metadata.get("form_fields", {})
     pdf_data = metadata.get("pdf_data", {})
