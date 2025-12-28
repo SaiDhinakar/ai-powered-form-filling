@@ -3,15 +3,13 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pathlib import Path
 import sys
 
-from huggingface_hub import User
-
 # Add backend directory to Python path
 backend_dir = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(backend_dir))
 
 from database.session import get_db, Session
 from database.repository import EntityRepository
-
+from api.v1.models import User
 from api.v1.routers.auth import get_current_user
 
 router = APIRouter(prefix="/entities", tags=["entities"])

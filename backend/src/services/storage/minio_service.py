@@ -5,7 +5,7 @@ from io import BytesIO
 
 
 class MinioService:
-    def __init__(self, endpoint, access_key, secret_key, secure=False):
+    def __init__(self, endpoint, access_key, secret_key, bucket_name, secure=False):
         """
         Initialize MinIO client
         
@@ -21,8 +21,10 @@ class MinioService:
             secret_key=secret_key,
             secure=secure
         )
+        self.bucket_name = bucket_name
+
     
-    def ensure_bucket_exists(self, bucket_name):
+    def ensure_bucket_exists(self):
         """
         Create bucket if it doesn't exist
         
@@ -30,21 +32,20 @@ class MinioService:
             bucket_name: Name of the bucket
         """
         try:
-            if not self.client.bucket_exists(bucket_name):
-                self.client.make_bucket(bucket_name)
-                print(f"Bucket '{bucket_name}' created successfully")
+            if not self.client.bucket_exists(self.bucket_name):
+                self.client.make_bucket(self.bucket_name)
+                print(f"Bucket '{self.bucket_name}' created successfully")
             else:
-                print(f"Bucket '{bucket_name}' already exists")
+                print(f"Bucket '{self.bucket_name}' already exists")
         except S3Error as e:
             print(f"Error creating bucket: {e}")
             raise
     
-    def upload_file(self, bucket_name, user_id, entity_id, file_data, file_name):
+    def upload_file(self, user_id, entity_id, file_data, file_name):
         """
         Upload file to MinIO with nested directory structure
         
         Args:
-            bucket_name: Name of the bucket
             user_id: User identifier for directory structure
             entity_id: Entity identifier for directory structure
             file_data: File data (bytes or file-like object)
@@ -54,8 +55,6 @@ class MinioService:
             str: Object path in MinIO
         """
         try:
-            # Ensure bucket exists
-            self.ensure_bucket_exists(bucket_name)
             
             # Create nested path: user_id/entity_id/file_name
             object_path = f"{user_id}/{entity_id}/{file_name}"
@@ -71,7 +70,7 @@ class MinioService:
             
             # Upload file
             self.client.put_object(
-                bucket_name,
+                self.bucket_name,
                 object_path,
                 file_data,
                 file_size
@@ -82,9 +81,9 @@ class MinioService:
             
         except S3Error as e:
             print(f"Error uploading file: {e}")
-            raise
+            raise 
     
-    def get_file(self, bucket_name, object_path):
+    def get_file(self, object_path):
         """
         Download file from MinIO
         
@@ -96,7 +95,7 @@ class MinioService:
             bytes: File content
         """
         try:
-            response = self.client.get_object(bucket_name, object_path)
+            response = self.client.get_object(self.bucket_name, object_path)
             data = response.read()
             response.close()
             response.release_conn()
@@ -105,7 +104,7 @@ class MinioService:
             print(f"Error downloading file: {e}")
             raise
     
-    def delete_file(self, bucket_name, object_path):
+    def delete_file(self, object_path):
         """
         Delete file from MinIO
         
@@ -114,13 +113,13 @@ class MinioService:
             object_path: Path to the object
         """
         try:
-            self.client.remove_object(bucket_name, object_path)
+            self.client.remove_object(self.bucket_name, object_path)
             print(f"File {object_path} deleted successfully")
         except S3Error as e:
             print(f"Error deleting file: {e}")
             raise
 
-if __name__ == "__main__":
+
     from dotenv import load_dotenv
     load_dotenv()
 

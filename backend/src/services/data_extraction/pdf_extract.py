@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-def extract_text_from_pdf_with_metadata(pdf_path: str, lang: str) -> dict:
+def extract_text_from_pdf_with_metadata(pdf_path, lang: str) -> dict:
     """
     Extract text and metadata from a PDF file.
     

@@ -6,7 +6,7 @@ import sys
 backend_dir = Path(__file__).parent.parent
 sys.path.insert(0, str(backend_dir))
 
-from api.v1.routers import auth, templates, form_fill, entities
+from api.v1.routers import auth, templates, form_fill, entities, user_data
 from api.v1.routers.auth import get_current_user
 from database import init_db
 
@@ -22,6 +22,7 @@ auth_dep = [Depends(get_current_user)]
 app.include_router(templates.router, prefix="/api/v1/templates", dependencies=auth_dep)
 app.include_router(form_fill.router, prefix="/api/v1/form-fill", dependencies=auth_dep)
 app.include_router(entities.router, prefix="/api/v1/entities", dependencies=auth_dep)
+app.include_router(user_data.router, prefix="/api/v1/entities-data", dependencies=auth_dep)
 
 @app.get("/")
 def read_root():

@@ -21,8 +21,8 @@ if ! command -v uv >/dev/null 2>&1; then
     exit 1
 fi
 
-printf "${GREEN}Running:${RESET} ${BOLD}uv run adk api_server${RESET}\n"
-uv run adk api_server
+printf "${GREEN}Running:${RESET} ${BOLD}uv run fastapi run ai_agents/serve.py --host 0.0.0.0 --port 8907${RESET}\n"
+uv run fastapi run ai_agents/serve.py --host 0.0.0.0 --port 8907
 rc=$?
 
 if [ $rc -eq 0 ]; then
