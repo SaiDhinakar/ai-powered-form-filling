@@ -1,7 +1,6 @@
 import sys
 import os
-# Add user site-packages explicitly due to environment mismatch
-sys.path.append(r"C:\Users\rubas\AppData\Roaming\Python\Python311\site-packages")
+
 from fillpdf.fillpdfs import write_fillable_pdf, get_form_fields
 
 def fill_pdf_form(input_pdf: str, output_pdf: str, form_data: dict):
