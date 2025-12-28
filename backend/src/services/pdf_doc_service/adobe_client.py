@@ -110,7 +110,7 @@ def convert_to_docx(asset_id: str) -> str:
         status = job_data.get("status")
         print(f"Current status: {status}")
 
-        if status == "completed":
+        if status == "completed" or status == "done":
             print("Conversion completed successfully.")
             return job_data["asset"]["downloadUri"]
         elif status == "failed":
