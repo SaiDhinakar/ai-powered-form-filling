@@ -39,10 +39,32 @@ def extract_and_save_organize_data(db_session, user_id: int, entity_id: int, pdf
             raise ValueError("No text extracted from PDF.")
         else:
             try:
-                # TODO : 
-                # - Spelling check and correction
-                # - Translation to English (to normalize for LLM processing)
-                extracted_toon_object = extract_data_to_toon(extracted_text)
+                try:
+                    # Spelling correction in the native language (if supported)
+                    try:
+                        corrected_native = asyncio.run(correct_spelling(extracted_text, lang))
+                    except Exception as e:
+                        print(f"[WARN] Native spell correction failed ({lang}): {e}")
+                        corrected_native = extracted_text
+
+                    # Translate to English to normalize for LLM processing
+                    try:
+                        translated_text = asyncio.run(translate(corrected_native, src=lang, dest='en'))
+                    except Exception as e:
+                        print(f"[WARN] Translation to English failed: {e}")
+                        translated_text = corrected_native if lang == 'en' else extracted_text
+
+                    # Final English spelling correction
+                    try:
+                        corrected_english = asyncio.run(correct_spelling(translated_text, 'en'))
+                    except Exception as e:
+                        print(f"[WARN] English spell correction failed: {e}")
+                        corrected_english = translated_text
+
+                    extracted_toon_object = extract_data_to_toon(corrected_english)
+                except Exception:
+                    status = 0
+                    raise
             except Exception as e:
                 status = 0
                 raise
