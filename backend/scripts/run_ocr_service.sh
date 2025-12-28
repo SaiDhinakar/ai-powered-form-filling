@@ -32,7 +32,7 @@ else
 fi
 
 HOST="${HOST:-127.0.0.1}"
-PORT="${PORT:-8000}"
+PORT="${PORT:-8001}"
 RELOAD="${RELOAD:-false}"
 WORKERS="${WORKERS:-}"
 
