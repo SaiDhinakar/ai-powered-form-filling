@@ -2,6 +2,7 @@ import { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Upload, Trash, File, FileImage, FilePdf } from 'phosphor-react';
 import Modal from '../components/Modal';
+import LanguageAssignmentModal from '../components/LanguageAssignmentModal';
 import useLocalStorage from '../hooks/useLocalStorage';
 import DocumentPreview from '../components/DocumentPreview';
 
@@ -11,6 +12,12 @@ export default function Entities() {
   const [entities, setEntities] = useLocalStorage('entities', []);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newEntityName, setNewEntityName] = useState('');
+
+  // State for language assignment
+  const [isLanguageModalOpen, setIsLanguageModalOpen] = useState(false);
+  const [pendingFiles, setPendingFiles] = useState([]);
+  const [pendingEntityId, setPendingEntityId] = useState(null);
+
   const fileInputRefs = useRef({});
 
   const handleCreateEntity = (e) => {
@@ -32,28 +39,46 @@ export default function Entities() {
   };
 
   const handleFileUpload = (entityId, e) => {
-  const files = Array.from(e.target.files);
+    const files = Array.from(e.target.files);
+    if (files.length === 0) return;
 
-  setEntities(
-    entities.map((entity) =>
-      entity.id === entityId
-        ? {
+    setPendingFiles(files);
+    setPendingEntityId(entityId);
+    setIsLanguageModalOpen(true);
+
+    // Reset input
+    e.target.value = '';
+  };
+
+  const handleLanguageConfirm = (assignments) => {
+    if (!pendingEntityId || pendingFiles.length === 0) return;
+
+    setEntities(
+      entities.map((entity) =>
+        entity.id === pendingEntityId
+          ? {
             ...entity,
             documents: [
               ...entity.documents,
-              ...files.map((file) => ({
+              ...pendingFiles.map((file) => ({
                 id: Date.now() + Math.random(),
                 name: file.name,
                 type: file.type,
                 size: file.size,
+                language: assignments[file.name],
                 url: URL.createObjectURL(file),
               })),
             ],
           }
-        : entity
-    )
-  );
-};
+          : entity
+      )
+    );
+
+    // Cleanup
+    setPendingFiles([]);
+    setPendingEntityId(null);
+    setIsLanguageModalOpen(false);
+  };
 
 
   const handleDeleteEntity = (id) => {
@@ -75,7 +100,7 @@ export default function Entities() {
     const docToDelete = entities
       .find((e) => e.id === entityId)
       ?.documents.find((d) => d.id === docId);
-    
+
     if (docToDelete?.url && docToDelete.url.startsWith('blob:')) {
       URL.revokeObjectURL(docToDelete.url);
     }
@@ -84,9 +109,9 @@ export default function Entities() {
       entities.map((entity) =>
         entity.id === entityId
           ? {
-              ...entity,
-              documents: entity.documents.filter((d) => d.id !== docId),
-            }
+            ...entity,
+            documents: entity.documents.filter((d) => d.id !== docId),
+          }
           : entity
       )
     );
@@ -180,10 +205,10 @@ export default function Entities() {
                 {entity.documents.map((doc) => {
                   const Icon = getFileIcon(doc.type);
                   return (
-                      <div
-                        key={doc.id}
-                        onClick={() => setPreviewFile(doc)}
-                        className="
+                    <div
+                      key={doc.id}
+                      onClick={() => setPreviewFile(doc)}
+                      className="
                           flex items-center justify-between
                           px-4 py-3
                           border border-[#E6E8EB]
@@ -191,21 +216,26 @@ export default function Entities() {
                           cursor-pointer
                           hover:bg-[#F8FAFC]
                         "
-                      >
+                    >
                       <div className="flex items-center gap-3 min-w-0">
                         <Icon size={18} className="text-[#475569]" />
-                        <span className="truncate text-[#0F172A]">
-                          {doc.name}
-                        </span>
+                        <div className="flex flex-col truncate">
+                          <span className="truncate text-[#0F172A]">
+                            {doc.name}
+                          </span>
+                          <span className="text-xs text-[#64748B]">
+                            {doc.language ? `Language: ${doc.language}` : 'No language set'}
+                          </span>
+                        </div>
                       </div>
 
                       <button
                         onClick={(e) => {
-                              e.stopPropagation();
-                              handleDeleteDocument(entity.id, doc.id);
-                            }}
-                            className="text-[#94A3B8] hover:text-[#B91C1C]"
-                          >
+                          e.stopPropagation();
+                          handleDeleteDocument(entity.id, doc.id);
+                        }}
+                        className="text-[#94A3B8] hover:text-[#B91C1C]"
+                      >
                         <Trash size={14} />
                       </button>
                     </div>
@@ -272,6 +302,14 @@ export default function Entities() {
           </div>
         </form>
       </Modal>
+
+      <LanguageAssignmentModal
+        isOpen={isLanguageModalOpen}
+        onClose={() => setIsLanguageModalOpen(false)}
+        files={pendingFiles}
+        onConfirm={handleLanguageConfirm}
+      />
+
       <DocumentPreview
         isOpen={!!previewFile}
         file={previewFile}

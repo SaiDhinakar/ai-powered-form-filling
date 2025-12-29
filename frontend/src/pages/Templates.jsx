@@ -2,23 +2,37 @@ import { useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import useLocalStorage from '../hooks/useLocalStorage';
 import DocumentPreview from '../components/DocumentPreview';
+import LanguageAssignmentModal from '../components/LanguageAssignmentModal';
 
 export default function Templates() {
   const [previewFile, setPreviewFile] = useState(null);
   const [templates, setTemplates] = useLocalStorage('templates', []);
   const fileInputRef = useRef(null);
 
+  const [isLanguageModalOpen, setIsLanguageModalOpen] = useState(false);
+  const [pendingFiles, setPendingFiles] = useState([]);
+
   const handleFileUpload = (e) => {
     const files = Array.from(e.target.files);
-    const newTemplates = files.map((file) => ({
+    if (files.length === 0) return;
+    setPendingFiles(files);
+    setIsLanguageModalOpen(true);
+    e.target.value = ''; // Reset input
+  };
+
+  const handleLanguageConfirm = (assignments) => {
+    const newTemplates = pendingFiles.map((file) => ({
       id: Date.now() + Math.random(),
       name: file.name,
       type: file.type,
       size: file.size,
+      language: assignments[file.name],
       uploadedAt: new Date().toISOString(),
-      url: URL.createObjectURL(file),
+      url: URL.createObjectURL(file), // Note: In a real app this would be an S3 URL or similar
     }));
     setTemplates([...templates, ...newTemplates]);
+    setPendingFiles([]);
+    setIsLanguageModalOpen(false);
   };
 
   const handleDelete = (id) => {
@@ -109,6 +123,9 @@ export default function Templates() {
                   Name
                 </th>
                 <th className="text-left px-8 py-4 text-sm font-medium text-[#475569]">
+                  Language
+                </th>
+                <th className="text-left px-8 py-4 text-sm font-medium text-[#475569]">
                   Size
                 </th>
                 <th className="text-left px-8 py-4 text-sm font-medium text-[#475569]">
@@ -132,6 +149,9 @@ export default function Templates() {
                       className="px-8 py-5 text-sm font-medium text-[#0F172A]"
                     >
                       {t.name}
+                    </td>
+                    <td className="px-8 py-5 text-sm text-[#475569]">
+                      {t.language || '-'}
                     </td>
                     <td className="px-8 py-5 text-sm text-[#475569]">
                       {formatSize(t.size)}
@@ -159,6 +179,14 @@ export default function Templates() {
           </table>
         </motion.div>
       )}
+
+      <LanguageAssignmentModal
+        isOpen={isLanguageModalOpen}
+        onClose={() => setIsLanguageModalOpen(false)}
+        files={pendingFiles}
+        onConfirm={handleLanguageConfirm}
+      />
+
       <DocumentPreview
         isOpen={!!previewFile}
         file={previewFile}
