@@ -10,16 +10,16 @@ import RecentForms from './pages/RecentForms';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
-    const auth = localStorage.getItem('isAuthenticated');
-    return auth === 'true';
+    // Check if token exists
+    return !!localStorage.getItem('token');
   });
 
   const handleLogin = () => {
-    localStorage.setItem('isAuthenticated', 'true');
     setIsAuthenticated(true);
   };
 
   const handleLogout = () => {
+    localStorage.removeItem('token');
     localStorage.setItem('isAuthenticated', 'false');
     setIsAuthenticated(false);
   };

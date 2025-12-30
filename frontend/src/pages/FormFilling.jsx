@@ -1,70 +1,73 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { CheckCircle, Warning } from 'phosphor-react';
-import useLocalStorage from '../hooks/useLocalStorage';
 import Loader from '../components/Loader';
+import api from '../services/api';
+import { toast } from 'react-hot-toast';
 
 export default function FormFilling() {
-  const [entities] = useLocalStorage('entities', []);
-  const [templates] = useLocalStorage('templates', []);
-  const [recentForms, setRecentForms] = useLocalStorage('recentForms', []);
+  const [entities, setEntities] = useState([]);
+  const [templates, setTemplates] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Selection State
   const [selectedEntityId, setSelectedEntityId] = useState('');
   const [selectedTemplateId, setSelectedTemplateId] = useState('');
 
-  const [formData, setFormData] = useState({
-    field1: '',
-    field2: '',
-    field3: '',
-  });
+  // Fetch options
+  useEffect(() => {
+    const loadOptions = async () => {
+      try {
+        const [entRes, tempRes] = await Promise.all([
+          api.get('/entities/entities/'),
+          api.get('/templates/template')
+        ]);
+        setEntities(entRes.data);
+        // setTemplates(tempRes.data.templates || []);
+        // Based on previous step, templates endpoint returns { templates: [...] }
+        setTemplates(tempRes.data.templates || []);
+      } catch (error) {
+        console.error('Failed to load options:', error);
+        toast.error('Failed to load form options');
+      }
+    };
+    loadOptions();
+  }, []);
 
-  const selectedEntity = entities.find(e => e.id === parseInt(selectedEntityId));
-  const selectedTemplate = templates.find(t => t.id === parseFloat(selectedTemplateId));
+  const [formData, setFormData] = useState({
+    // Dynamic fields not really used in current backend logic (it auto-fills everything)
+    // but keeping structure for UI consistency if needed
+  });
 
   const handleEntityChange = (e) => {
     setSelectedEntityId(e.target.value);
     setSelectedTemplateId('');
-    setFormData({ field1: '', field2: '', field3: '' });
   };
 
   const handleTemplateChange = (e) => {
     setSelectedTemplateId(e.target.value);
-    // Simulate AI extraction simply by template selection as a trigger?
-    // Or just clear it.
-    setFormData({
-      field1: '',
-      field2: '',
-      field3: ''
-    });
   };
 
   const canSubmit = selectedEntityId && selectedTemplateId && !isSubmitting;
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!canSubmit) return;
 
     setIsSubmitting(true);
 
-    setTimeout(() => {
-      setRecentForms([
-        {
-          id: Date.now(),
-          entityId: selectedEntityId,
-          // documentId is no longer explicitly selected
-          templateId: selectedTemplateId,
-          templateLanguage: selectedTemplate?.language,
-          submittedAt: new Date().toISOString(),
-          status: 'Completed',
-        },
-        ...recentForms,
-      ]);
-
-      setFormData({ field1: '', field2: '', field3: '' });
+    try {
+      const response = await api.post(`/form-fill/form-fill?template_id=${selectedTemplateId}&entity_id=${selectedEntityId}`);
+      toast.success('Form filled successfully!');
+      console.log('Filled form path:', response.data.filled_pdf_path);
+      // Ideally show a download link or preview
+      // For now, just a toast
+    } catch (error) {
+      console.error('Form filling failed:', error);
+      toast.error('Form filling failed: ' + (error.response?.data?.detail || error.message));
+    } finally {
       setIsSubmitting(false);
-    }, 1200);
+    }
   };
 
   return (

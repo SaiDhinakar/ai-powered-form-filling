@@ -3,10 +3,10 @@ from sqlalchemy.orm import sessionmaker, Session
 from sqlalchemy.ext.declarative import declarative_base
 from contextlib import contextmanager
 from typing import Generator
-import os
+from config import settings
 
-# Database URL from environment variable or default to SQLite
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./app.db")
+# Database URL from settings
+DATABASE_URL = settings.DATABASE_URL
 
 # Create database engine
 engine = create_engine(

@@ -50,4 +50,9 @@ def init_db() -> None:
     """
     Initialize database by creating all tables.
     """
+    # Import models to ensure they are registered with Base metadata
+    from .models import User, Entity, Template, ExtractedData
+    print("Creating database tables...")
+    print(f"Registered tables: {Base.metadata.tables.keys()}")
     Base.metadata.create_all(bind=engine)
+    print("Database initialization complete.")

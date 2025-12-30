@@ -12,7 +12,41 @@ from database import init_db
 
 init_db()
 
+# PROBE THE DATABASE IMMEDIATELY
+from database.base import engine
+from sqlalchemy import text
+with engine.connect() as conn:
+    try:
+        print("DEBUG: PROBING entities TABLE...")
+        result = conn.execute(text("SELECT count(*) FROM entities"))
+        print(f"DEBUG: PROBE SUCCESS. Count: {result.scalar()}")
+        result = conn.execute(text("SELECT count(*) FROM users"))
+        print(f"DEBUG: PROBE USERS SUCCESS. Count: {result.scalar()}")
+    except Exception as e:
+        print(f"DEBUG: PROBE FAILED: {e}")
+
 app = FastAPI(title="AI Powered Form Filling API", version="1.0.0")
+
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from config import settings
+import os
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173", "http://localhost:3000"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Ensure directories exist
+os.makedirs(settings.UPLOAD_FILE_PATH, exist_ok=True)
+os.makedirs(settings.OUTPUT_FILE_PATH, exist_ok=True)
+
+# Mount static files
+app.mount("/static/uploads", StaticFiles(directory=settings.UPLOAD_FILE_PATH), name="uploads")
+app.mount("/static/outputs", StaticFiles(directory=settings.OUTPUT_FILE_PATH), name="outputs")
 
 # Include routers
 # Auth router remains public (login/signup)

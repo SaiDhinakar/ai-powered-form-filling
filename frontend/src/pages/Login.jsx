@@ -1,17 +1,48 @@
 import { useState } from 'react';
+import api from '../services/api';
 
 export default function Login({ onLogin }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = (e) => {
+  // Add a new state for mode
+  const [isLogin, setIsLogin] = useState(true);
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
-    setTimeout(() => {
-      onLogin();
+    try {
+      const endpoint = isLogin ? '/auth/login' : '/auth/signup';
+      const payload = {
+        email: email,
+        password: password
+      };
+
+      if (!isLogin) {
+        // Signup flow
+        await api.post(endpoint, payload);
+        // On success, switch to login or auto-login
+        // Let's auto-login or just reuse the login logic
+        // For simplicity: after signup, call login immediately 
+        const loginRes = await api.post('/auth/login', payload);
+        const { access_token } = loginRes.data;
+        localStorage.setItem('token', access_token);
+        onLogin();
+      } else {
+        // Login flow
+        const response = await api.post(endpoint, payload);
+        const { access_token } = response.data;
+        localStorage.setItem('token', access_token);
+        onLogin();
+      }
+    } catch (error) {
+      console.error(isLogin ? 'Login failed:' : 'Signup failed:', error);
+      const msg = error.response?.data?.detail || 'Authentication failed. Please check credentials.';
+      alert(msg);
+    } finally {
       setIsLoading(false);
-    }, 800);
+    }
   };
 
   return (
@@ -71,10 +102,10 @@ export default function Login({ onLogin }) {
           <div className="bg-[#FDFEFF] border border-[#E6E8EB] rounded-2xl p-10">
             <div className="mb-10">
               <h2 className="text-2xl font-semibold text-[#0F172A]">
-                Sign in
+                {isLogin ? 'Sign in' : 'Create an account'}
               </h2>
               <p className="mt-2 text-base text-[#64748B]">
-                Use your organization email
+                {isLogin ? 'Use your organization email' : 'Get started with your free account'}
               </p>
             </div>
 
@@ -122,8 +153,18 @@ export default function Login({ onLogin }) {
                   disabled:opacity-60
                 "
               >
-                {isLoading ? 'Signing in…' : 'Continue'}
+                {isLoading ? (isLogin ? 'Signing in…' : 'Creating account…') : (isLogin ? 'Continue' : 'Sign up')}
               </button>
+
+              <div className="text-center">
+                <button
+                  type="button"
+                  onClick={() => setIsLogin(!isLogin)}
+                  className="text-sm text-[#2563EB] hover:underline"
+                >
+                  {isLogin ? "Don't have an account? Sign up" : "Already have an account? Sign in"}
+                </button>
+              </div>
             </form>
           </div>
         </div>

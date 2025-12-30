@@ -38,58 +38,59 @@ def extract_and_save_organize_data(db_session, user_id: int, entity_id: int, fil
     try:
         extraction_result = ''
         extracted_text = ''
-        extracted_toon_text = ''
+        extracted_toon_text = {}
         status = 0
+        
         try:
             extraction_result = extract_text_from_pdf_or_img_with_metadata(file_path, lang=lang)
             extracted_text = extraction_result.get('text', '')
-            print(f"[DEBUG] Extraction result metadata: {extracted_text}")
-            # metadata = extraction_result.get('metadata', {}) # Currently unused, can be used later
-        except Exception as e:
-            raise ValueError(f"Error extracting text from PDF: {str(e)}")
-        status = 1
-
-        if not extracted_text:
-            status = 0
-            raise ValueError("No text extracted from PDF.")
-        else:
-            try:
-                response = requests.post(
-                            url=f"{settings.AGENTS_API_ENDPOINT}/extract-data/",
-                            params={
-                                "document_text": extracted_text,
-                                "lang": lang
-                            },
-                            timeout=120
-                        )
-                
-                if response.status_code != 200:
-                    status = 0
-                    raise ValueError(f"Agent service returned status code {response.status_code}")
-                
-                agent_response = response.json()
-                print(f"[DEBUG] Agent response: {agent_response}")
-                extracted_toon_text = agent_response.get("extracted_data", "")
-                if not extracted_toon_text:
-                    status = 0
-                    raise ValueError("No data extracted by agent service.")            
-            except Exception:
+            print(f"[DEBUG] Extraction result metadata: {extracted_text[:100]}...")
+            
+            if not extracted_text:
+                print("No text extracted from PDF.")
                 status = 0
-                raise
+            else:
+                try:
+                    response = requests.post(
+                                url=f"{settings.AGENTS_API_ENDPOINT}/extract-data/",
+                                params={
+                                    "document_text": extracted_text,
+                                    "lang": lang
+                                },
+                                timeout=120
+                            )
+                    
+                    if response.status_code != 200:
+                        print(f"Agent service returned status code {response.status_code}")
+                        status = 0
+                    else:
+                        agent_response = response.json()
+                        print(f"[DEBUG] Agent response: {agent_response}")
+                        extracted_toon_text = agent_response.get("extracted_data", {})
+                        status = 1
+                except Exception as e:
+                    print(f"Agent service extraction failed: {e}")
+                    status = 0
 
-        print(f"[DEBUG] Final extracted TOON Data: {extracted_toon_text}")
+        except Exception as e:
+            print(f"Error extracting text from PDF: {str(e)}")
+            status = 0
+
+        # Always create the database record, even if extraction failed
         ExtractedDataRepository.create(
             db=db_session,
             user_id=user_id,
             entity_id=entity_id,
             file_hash=file_hash,
             status=status,
-            extracted_toon_object=str(extracted_toon_text)
+            extracted_toon_object=extracted_toon_text if isinstance(extracted_toon_text, dict) else {}
         )
         return status
-    
+
     except Exception as e:
-        print(f"Error during extraction and saving: {e}")
+        print(f"[WARNING] Extraction process encountered an error, but file was saved: {e}")
+        # Ensure we don't crash the endpoint completely
+        return 0
 
 if __name__ == "__main__":
     from database.base import SessionLocal
