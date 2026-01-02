@@ -9,9 +9,9 @@ class UserRepository:
     """Repository for User model operations."""
     
     @staticmethod
-    def create(db: Session, username: str, hashed_password: str) -> User:
+    def create(db: Session, email: str, hashed_password: str) -> User:
         """Create a new user."""
-        user = User(username=username, hashed_password=hashed_password)
+        user = User(email=email, hashed_password=hashed_password)
         db.add(user)
         db.commit()
         db.refresh(user)
@@ -23,9 +23,9 @@ class UserRepository:
         return db.query(User).filter(User.id == user_id).first()
     
     @staticmethod
-    def get_by_username(db: Session, username: str) -> Optional[User]:
-        """Get user by username."""
-        return db.query(User).filter(User.username == username).first()
+    def get_by_email(db: Session, email: str) -> Optional[User]:
+        """Get user by email."""
+        return db.query(User).filter(User.email == email).first()
     
     @staticmethod
     def get_all(db: Session, skip: int = 0, limit: int = 100) -> List[User]:
@@ -74,7 +74,8 @@ class EntityRepository:
     @staticmethod
     def get_by_user(db: Session, user_id: int, skip: int = 0, limit: int = 100) -> List[Entity]:
         """Get all entities for a user."""
-        return db.query(Entity).filter(Entity.user_id == user_id).offset(skip).limit(limit).all()
+        from sqlalchemy.orm import joinedload
+        return db.query(Entity).options(joinedload(Entity.extracted_data)).filter(Entity.user_id == user_id).offset(skip).limit(limit).all()
     
     @staticmethod
     def update(

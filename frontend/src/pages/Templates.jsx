@@ -1,34 +1,76 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import useLocalStorage from '../hooks/useLocalStorage';
 import DocumentPreview from '../components/DocumentPreview';
+import LanguageAssignmentModal from '../components/LanguageAssignmentModal';
+import api from '../services/api';
+import { toast } from 'react-hot-toast';
 
 export default function Templates() {
   const [previewFile, setPreviewFile] = useState(null);
-  const [templates, setTemplates] = useLocalStorage('templates', []);
+  const [templates, setTemplates] = useState([]);
   const fileInputRef = useRef(null);
+
+  const [isLanguageModalOpen, setIsLanguageModalOpen] = useState(false);
+  const [pendingFiles, setPendingFiles] = useState([]);
+
+  const fetchTemplates = async () => {
+    try {
+      const response = await api.get('/templates/template');
+      // response.data.templates based on router code
+      setTemplates(response.data.templates || []);
+    } catch (error) {
+      console.error('Failed to fetch templates:', error);
+      toast.error('Failed to load templates');
+    }
+  };
+
+  useEffect(() => {
+    fetchTemplates();
+  }, []);
 
   const handleFileUpload = (e) => {
     const files = Array.from(e.target.files);
-    const newTemplates = files.map((file) => ({
-      id: Date.now() + Math.random(),
-      name: file.name,
-      type: file.type,
-      size: file.size,
-      uploadedAt: new Date().toISOString(),
-      url: URL.createObjectURL(file),
-    }));
-    setTemplates([...templates, ...newTemplates]);
+    if (files.length === 0) return;
+    setPendingFiles(files);
+    setIsLanguageModalOpen(true);
+    e.target.value = ''; // Reset input
   };
 
-  const handleDelete = (id) => {
-    // Revoke blob URL to free memory
-    const templateToDelete = templates.find((t) => t.id === id);
-    if (templateToDelete?.url && templateToDelete.url.startsWith('blob:')) {
-      URL.revokeObjectURL(templateToDelete.url);
-    }
+  const handleLanguageConfirm = async (assignments) => {
+    const uploadPromise = Promise.all(pendingFiles.map(async (file) => {
+      const formData = new FormData();
+      formData.append('file', file);
+      const lang = assignments[file.name] || 'en';
+      formData.append('lang', lang);
 
-    setTemplates(templates.filter((t) => t.id !== id));
+      return api.post('/templates/template', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+    }));
+
+    toast.promise(uploadPromise, {
+      loading: 'Uploading templates...',
+      success: 'Templates uploaded',
+      error: 'Failed to upload templates'
+    }).then(() => {
+      setPendingFiles([]);
+      setIsLanguageModalOpen(false);
+      fetchTemplates();
+    }).catch(err => console.error(err));
+  };
+
+  const handleDelete = async (id) => {
+    if (!confirm("Are you sure you want to delete this template?")) return;
+    try {
+      await api.delete(`/templates/template?template_id=${id}`);
+      toast.success('Template deleted');
+      fetchTemplates();
+    } catch (error) {
+      console.error(error);
+      toast.error('Failed to delete template');
+    }
   };
 
   const formatSize = (bytes) =>
@@ -109,6 +151,9 @@ export default function Templates() {
                   Name
                 </th>
                 <th className="text-left px-8 py-4 text-sm font-medium text-[#475569]">
+                  Language
+                </th>
+                <th className="text-left px-8 py-4 text-sm font-medium text-[#475569]">
                   Size
                 </th>
                 <th className="text-left px-8 py-4 text-sm font-medium text-[#475569]">
@@ -131,13 +176,17 @@ export default function Templates() {
                     <td
                       className="px-8 py-5 text-sm font-medium text-[#0F172A]"
                     >
-                      {t.name}
+                      {t.path ? t.path.split('/').pop() : 'Unnamed'}
                     </td>
                     <td className="px-8 py-5 text-sm text-[#475569]">
-                      {formatSize(t.size)}
+                      {t.lang || '-'}
                     </td>
                     <td className="px-8 py-5 text-sm text-[#475569]">
-                      {formatDate(t.uploadedAt)}
+                      {/* Size might not be in DB response, showing placeholder or calculating if available */}
+                      -
+                    </td>
+                    <td className="px-8 py-5 text-sm text-[#475569]">
+                      {formatDate(t.created_at)}
                     </td>
                     <td className="px-8 py-5 text-right">
                       <button
@@ -159,6 +208,14 @@ export default function Templates() {
           </table>
         </motion.div>
       )}
+
+      <LanguageAssignmentModal
+        isOpen={isLanguageModalOpen}
+        onClose={() => setIsLanguageModalOpen(false)}
+        files={pendingFiles}
+        onConfirm={handleLanguageConfirm}
+      />
+
       <DocumentPreview
         isOpen={!!previewFile}
         file={previewFile}

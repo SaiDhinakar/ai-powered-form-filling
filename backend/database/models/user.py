@@ -25,7 +25,7 @@ class User(Base):
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     
     # Fields
-    username: Mapped[str] = mapped_column(String(100), unique=True, nullable=False, index=True)
+    email: Mapped[str] = mapped_column(String(100), unique=True, nullable=False, index=True)
     hashed_password: Mapped[str] = mapped_column(String(255), nullable=False)
     
     # Relationships
@@ -36,4 +36,4 @@ class User(Base):
     )
     
     def __repr__(self) -> str:
-        return f"<User(id={self.id}, username='{self.username}')>"
+        return f"<User(id={self.id}, email='{self.email}')>"

@@ -96,7 +96,9 @@ def form_fill(
 
         auto_fill.fill_pdf_form(template_pdf_path, output_pdf_path, filled_form)
 
-        return {"filled_pdf_path": str(output_pdf_path)}
+        # Return relative URL for frontend access
+        relative_path = output_pdf_path.relative_to(settings.OUTPUT_FILE_PATH)
+        return {"filled_pdf_path": f"/static/outputs/{relative_path}"}
 
     except Exception as e:
         print(f"An error occurred during form filling: {e}")

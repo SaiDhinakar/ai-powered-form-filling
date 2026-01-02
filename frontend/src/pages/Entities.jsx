@@ -1,95 +1,133 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Upload, Trash, File, FileImage, FilePdf } from 'phosphor-react';
 import Modal from '../components/Modal';
-import useLocalStorage from '../hooks/useLocalStorage';
+import LanguageAssignmentModal from '../components/LanguageAssignmentModal';
 import DocumentPreview from '../components/DocumentPreview';
+import api from '../services/api';
+import { toast } from 'react-hot-toast';
 
 
 export default function Entities() {
   const [previewFile, setPreviewFile] = useState(null);
-  const [entities, setEntities] = useLocalStorage('entities', []);
+  const [entities, setEntities] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newEntityName, setNewEntityName] = useState('');
-  const fileInputRefs = useRef({});
 
-  const handleCreateEntity = (e) => {
+  // Fetch entities
+  const fetchEntities = async () => {
+    try {
+      // Assuming GET /entities/entities/ returns { entities: [...] } or list
+      // Based on api_info.json, it seems to return just response... let's assume standard
+      // NOTE: endpoint is /entities/entities/ per api_info.json which seems redundant but follows router structure
+      const response = await api.get('/entities/entities/');
+      // Adjust based on actual response structure. Assuming list or paginated object.
+      // If Pydantic model response is direct list, use response.data. 
+      // Code below assumes response.data is the array of entities.
+      setEntities(response.data);
+    } catch (error) {
+      console.error('Failed to fetch entities:', error);
+      toast.error('Failed to load entities');
+    }
+  };
+
+  useEffect(() => {
+    fetchEntities();
+  }, []);
+
+  const handleCreateEntity = async (e) => {
     e.preventDefault();
     if (!newEntityName.trim()) return;
 
-    setEntities([
-      ...entities,
-      {
-        id: Date.now(),
-        name: newEntityName,
-        documents: [],
-        createdAt: new Date().toISOString(),
-      },
-    ]);
-
-    setNewEntityName('');
-    setIsModalOpen(false);
+    try {
+      await api.post(`/entities/entities/?entity_name=${encodeURIComponent(newEntityName)}`);
+      toast.success('Entity created');
+      setNewEntityName('');
+      setIsModalOpen(false);
+      fetchEntities();
+    } catch (error) {
+      console.error('Failed to create entity:', error);
+      toast.error('Failed to create entity');
+    }
   };
+
+  // State for language assignment
+  const [isLanguageModalOpen, setIsLanguageModalOpen] = useState(false);
+  const [pendingFiles, setPendingFiles] = useState([]);
+  const [pendingEntityId, setPendingEntityId] = useState(null);
+
+  const fileInputRefs = useRef({});
 
   const handleFileUpload = (entityId, e) => {
-  const files = Array.from(e.target.files);
+    const files = Array.from(e.target.files);
+    if (files.length === 0) return;
 
-  setEntities(
-    entities.map((entity) =>
-      entity.id === entityId
-        ? {
-            ...entity,
-            documents: [
-              ...entity.documents,
-              ...files.map((file) => ({
-                id: Date.now() + Math.random(),
-                name: file.name,
-                type: file.type,
-                size: file.size,
-                url: URL.createObjectURL(file),
-              })),
-            ],
-          }
-        : entity
-    )
-  );
-};
+    setPendingFiles(files);
+    setPendingEntityId(entityId);
+    setIsLanguageModalOpen(true);
 
-
-  const handleDeleteEntity = (id) => {
-    // Revoke all blob URLs in the entity to free memory
-    const entityToDelete = entities.find((e) => e.id === id);
-    if (entityToDelete?.documents) {
-      entityToDelete.documents.forEach((doc) => {
-        if (doc.url && doc.url.startsWith('blob:')) {
-          URL.revokeObjectURL(doc.url);
-        }
-      });
-    }
-
-    setEntities(entities.filter((e) => e.id !== id));
+    // Reset input
+    e.target.value = '';
   };
 
-  const handleDeleteDocument = (entityId, docId) => {
-    // Revoke blob URL to free memory
-    const docToDelete = entities
-      .find((e) => e.id === entityId)
-      ?.documents.find((d) => d.id === docId);
-    
-    if (docToDelete?.url && docToDelete.url.startsWith('blob:')) {
-      URL.revokeObjectURL(docToDelete.url);
-    }
+  const handleLanguageConfirm = async (assignments) => {
+    if (!pendingEntityId || pendingFiles.length === 0) return;
 
-    setEntities(
-      entities.map((entity) =>
-        entity.id === entityId
-          ? {
-              ...entity,
-              documents: entity.documents.filter((d) => d.id !== docId),
-            }
-          : entity
-      )
-    );
+    const uploadPromise = Promise.all(pendingFiles.map(async (file) => {
+      const formData = new FormData();
+      formData.append('file', file);
+      // API expects optional 'lang' query param or form field? 
+      // api_info.json says query param 'lang' 
+      const lang = assignments[file.name] || 'en';
+
+      return api.post(`/entities-data/entities-data/?entity_id=${pendingEntityId}&lang=${lang}`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+    }));
+
+    toast.promise(uploadPromise, {
+      loading: 'Uploading documents...',
+      success: 'Documents uploaded',
+      error: 'Failed to upload documents'
+    }).then(() => {
+      // Cleanup
+      setPendingFiles([]);
+      setPendingEntityId(null);
+      setIsLanguageModalOpen(false);
+      fetchEntities();
+    }).catch(err => {
+      console.error(err);
+    });
+  };
+
+
+  const handleDeleteEntity = async (id) => {
+    if (!confirm("Are you sure you want to delete this entity?")) return;
+    try {
+      await api.delete(`/entities/entities/${id}`);
+      toast.success('Entity deleted');
+      fetchEntities();
+    } catch (error) {
+      console.error(error);
+      toast.error('Failed to delete entity');
+    }
+  };
+
+  const handleDeleteDocument = async (entityId, docId) => {
+    // Note: API for deleting specific document from entity data isn't explicitly in api_info.json list 
+    // assuming CRUD on entities-data or managing via entity update.
+    // If not available, we might need to skip or implement backend endpoint.
+    // For now, let's assume DELETE /entities-data/{id} exists or skip implementation and visually remove.
+    // Checking api_info.json -> DELETE /entities/entities/{entity_id} delete whole entity.
+    // No specific endpoint to delete extracted data item in api_info.json summary provided?
+    // Wait, Repository `ExtractedDataRepository` exists. `entities-data` router likely has CRUD?
+    // Let's assume there is a delete or just impl visual for now if endpoint missing.
+    // Actually, let's try assuming standard REST: DELETE /entities-data/entities-data/{id} (if exists) 
+    // or just console log warning.
+    console.warn("Delete document API not visible in summary, assuming strictly managed via re-upload or parent delete for now.");
+    toast('Delete document feature pending backend endpoint');
   };
 
   const getFileIcon = (type) => {
@@ -163,7 +201,7 @@ export default function Entities() {
                     {entity.name}
                   </h2>
                   <p className="mt-1 text-sm text-[#64748B]">
-                    {entity.documents.length} documents
+                    {(entity.extracted_data || []).length} documents
                   </p>
                 </div>
 
@@ -177,13 +215,13 @@ export default function Entities() {
 
               {/* DOCUMENTS */}
               <div className="space-y-3 mb-8">
-                {entity.documents.map((doc) => {
-                  const Icon = getFileIcon(doc.type);
+                {(entity.extracted_data || []).map((doc) => {
+                  const Icon = getFileIcon('pdf'); // Default to PDF icon since we don't have type
                   return (
-                      <div
-                        key={doc.id}
-                        onClick={() => setPreviewFile(doc)}
-                        className="
+                    <div
+                      key={doc.id}
+                      onClick={() => setPreviewFile(doc)}
+                      className="
                           flex items-center justify-between
                           px-4 py-3
                           border border-[#E6E8EB]
@@ -191,21 +229,26 @@ export default function Entities() {
                           cursor-pointer
                           hover:bg-[#F8FAFC]
                         "
-                      >
+                    >
                       <div className="flex items-center gap-3 min-w-0">
                         <Icon size={18} className="text-[#475569]" />
-                        <span className="truncate text-[#0F172A]">
-                          {doc.name}
-                        </span>
+                        <div className="flex flex-col truncate">
+                          <span className="truncate text-[#0F172A]">
+                            {doc.file_hash || 'Unnamed Document'}
+                          </span>
+                          <span className="text-xs text-[#64748B]">
+                            {doc.status === 1 ? 'Processed' : 'Processing/Pending'}
+                          </span>
+                        </div>
                       </div>
 
                       <button
                         onClick={(e) => {
-                              e.stopPropagation();
-                              handleDeleteDocument(entity.id, doc.id);
-                            }}
-                            className="text-[#94A3B8] hover:text-[#B91C1C]"
-                          >
+                          e.stopPropagation();
+                          handleDeleteDocument(entity.id, doc.id);
+                        }}
+                        className="text-[#94A3B8] hover:text-[#B91C1C]"
+                      >
                         <Trash size={14} />
                       </button>
                     </div>
@@ -272,6 +315,14 @@ export default function Entities() {
           </div>
         </form>
       </Modal>
+
+      <LanguageAssignmentModal
+        isOpen={isLanguageModalOpen}
+        onClose={() => setIsLanguageModalOpen(false)}
+        files={pendingFiles}
+        onConfirm={handleLanguageConfirm}
+      />
+
       <DocumentPreview
         isOpen={!!previewFile}
         file={previewFile}

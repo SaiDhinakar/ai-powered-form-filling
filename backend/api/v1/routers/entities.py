@@ -9,22 +9,23 @@ sys.path.insert(0, str(backend_dir))
 
 from database.session import get_db, Session
 from database.repository import EntityRepository
-from api.v1.models import User
+from api.v1.models import User, EntityResponse
 from api.v1.routers.auth import get_current_user
 
 router = APIRouter(prefix="/entities", tags=["entities"])
 
-@router.get("/")
-async def list_entities(
+@router.get("/", response_model=List[EntityResponse])
+def list_entities(
+    skip: int = 0,
     limit: int = 100,
-    offset: int = 0,
-    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
     """
     List entities with pagination.
     """
-    return EntityRepository.get_by_user(db, current_user.id, skip=offset, limit=limit)
+    entities = EntityRepository.get_by_user(db, current_user.id, skip=skip, limit=limit)
+    return entities
 
 
 @router.get("/{entity_id}")

@@ -1,5 +1,6 @@
 from dotenv import load_dotenv
 import os
+from pathlib import Path
 # from src.services.storage.minio_service import MinioService
 
 load_dotenv()
@@ -12,6 +13,16 @@ class Settings:
     SECRET_KEY: str = os.getenv("SECRET_KEY", "supersecretkey")
     ALGORITHM: str = os.getenv("ALGORITHM", "HS256")
     ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "30"))
+    
+    # Use absolute path for DB to avoid CWD issues
+    # BACKEND_DIR: str = str(Path(__file__).parent.resolve())
+    # DATABASE_URL: str = f"sqlite:///{BACKEND_DIR}/test.db"
+    
+    # HARDCODED FOR DEBUGGING
+    DATABASE_URL: str = "sqlite:////Users/akila/Documents/sideProjects/ai-form-filling/ai-powered-form-filling/backend/form_filling.db"
+    
+    print(f"DEBUG: LOADING CONFIG WITH DB URL: {DATABASE_URL}")
+    
     UPLOAD_FILE_PATH: str = os.getenv("UPLOAD_FILE_PATH", "./uploads")
     OUTPUT_FILE_PATH: str = os.getenv("OUTPUT_FILE_PATH", "./outputs")
     AGENTS_API_ENDPOINT: str = os.getenv("AGENTS_API_ENDPOINT", "http://localhost:8907/agent")
