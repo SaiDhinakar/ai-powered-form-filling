@@ -21,4 +21,6 @@ dependencies = [
     "python-jose[cryptography]>=3.3.0",
     "googletrans>=4.0.2",
     "fillpdf>=0.7.3",
+    "uvicorn[standard]>=0.40.0",
+    "opencv-python>=4.11.0.86",
 ]

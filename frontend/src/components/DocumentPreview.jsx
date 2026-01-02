@@ -15,6 +15,7 @@ export default function DocumentPreview({ isOpen, onClose, file }) {
 
   const fileType = file.type || '';
   const fileName = file.name.toLowerCase();
+  const fileUrl = file.url; // Assuming file.url is always available for preview
 
   const isImage =
     fileType.startsWith('image/') ||
@@ -23,6 +24,10 @@ export default function DocumentPreview({ isOpen, onClose, file }) {
   const isPdf =
     fileType === 'application/pdf' ||
     fileName.endsWith('.pdf');
+
+  const isHtml =
+    fileType === 'text/html' ||
+    fileName.endsWith('.html');
 
   return (
     <AnimatePresence>
@@ -104,7 +109,16 @@ export default function DocumentPreview({ isOpen, onClose, file }) {
               </object>
             )}
 
-            {!isImage && !isPdf && (
+            {isHtml && (
+              <iframe
+                src={file.url}
+                className="w-full h-full bg-white rounded-lg"
+                title="HTML Preview"
+                sandbox="allow-same-origin"
+              />
+            )}
+
+            {!isImage && !isPdf && !isHtml && (
               <div className="text-center">
                 <p className="text-[#475569] font-medium">
                   Preview not available

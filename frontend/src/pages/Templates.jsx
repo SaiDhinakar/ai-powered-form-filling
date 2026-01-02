@@ -106,7 +106,7 @@ export default function Templates() {
         <input
           ref={fileInputRef}
           type="file"
-          accept=".pdf"
+          accept=".pdf,.html"
           multiple
           onChange={handleFileUpload}
           className="hidden"

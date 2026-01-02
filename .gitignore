@@ -29,7 +29,7 @@ ENV/
 .vscode/
 .idea/
 *.swp
-
+*.pid
 # OS generated
 Thumbs.db
 .DS_Store
@@ -38,3 +38,4 @@ outputs/
 uploads/
 temp/
 logs/*.log
+api_info.json

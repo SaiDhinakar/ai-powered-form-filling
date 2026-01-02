@@ -47,17 +47,31 @@ async def create_template(
     # Prepare directory
     user_dir = Path(settings.UPLOAD_FILE_PATH) / "templates" / str(user.id)
     user_dir.mkdir(parents=True, exist_ok=True)
-    file_path = user_dir / f"{file_hash}.pdf"
+    
+    # Determine extension
+    filename = file.filename.lower()
+    ext = ".html" if filename.endswith(".html") else ".pdf"
+    
+    file_path = user_dir / f"{file_hash}{ext}"
     # Save file
     with open(file_path, "wb") as f:
         f.write(file_content)
 
-    # Extract metadata
-    print(f"Extracting metadata for template {file_path} with lang={lang}")
-    metadata = get_template_metadata(str(file_path), lang=lang or 'en')
-    form_fields = metadata.get("form_fields", {})
-    pdf_data = metadata.get("pdf_data", {})
+    # Extract metadata only for PDFs
+    form_fields = {}
+    pdf_data = {}
     
+    if ext == ".pdf":
+        print(f"Extracting metadata for template {file_path} with lang={lang}")
+        try:
+            metadata = get_template_metadata(str(file_path), lang=lang or 'en')
+            form_fields = metadata.get("form_fields", {})
+            pdf_data = metadata.get("pdf_data", {})
+        except Exception as e:
+            print(f"Error extracting metadata from PDF: {e}")
+    else:
+        print(f"Skipping metadata extraction for HTML template: {file_path}")
+        
     # Store in DB
     template = TemplateRepository.create(
         db=db,
@@ -92,7 +106,11 @@ async def update_template(
         new_file_hash = hashlib.sha256(file_content).hexdigest()
         user_dir = Path(settings.UPLOAD_FILE_PATH) / "templates" / str(user_id)
         user_dir.mkdir(parents=True, exist_ok=True)
-        new_file_path = user_dir / f"{new_file_hash}.pdf"
+        
+        filename = file.filename.lower()
+        ext = ".html" if filename.endswith(".html") else ".pdf"
+        
+        new_file_path = user_dir / f"{new_file_hash}{ext}"
         with open(new_file_path, "wb") as f:
             f.write(file_content)
         # Remove old file if different
