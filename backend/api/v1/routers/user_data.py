@@ -28,9 +28,9 @@ async def list_entity_data(
     db: Session = Depends(get_db),
 ):
     """
-    List data for a specific entity with pagination.
+    Get consolidated data for a specific entity.
     """
-    return ExtractedDataRepository.get_by_entity(db, entity_id)
+    return ExtractedDataRepository.get_single_by_entity(db, entity_id)
 
 @router.post("/", status_code=status.HTTP_201_CREATED)
 async def create_entity_data(
@@ -41,23 +41,17 @@ async def create_entity_data(
     current_user: User = Depends(get_current_user),
 ):
     """
-    Create a new extracted data record for an entity.
+    Create or update extracted data record for an entity.
+    Data is merged into a single consolidated record per entity.
     """
     file_content = await file.read()
     file_hash = generate_file_hash(file_content)
 
-    try:
-        data = ExtractedDataRepository.get_by_entity(db, entity_id)
-        existing_data = [row.file_hash for row in data]
-        if file_hash in existing_data:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Extracted data with this file already exists."
-            )
-    except Exception as e:
+    # Check if this file has already been processed for this entity
+    if ExtractedDataRepository.is_file_processed(db, entity_id, file_hash):
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Error checking existing extracted data."
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Extracted data with this file already exists."
         )
     
     # Store file 
@@ -77,9 +71,9 @@ async def create_entity_data(
         with open(file_path, "wb") as f:
             f.write(file_content)
 
-        status = extract_and_save_organize_data(db, current_user.id, entity_id, file_path, lang=lang)
+        extraction_status = extract_and_save_organize_data(db, current_user.id, entity_id, file_path, lang=lang)
 
-        return {"status": status}
+        return {"status": extraction_status}
 
     except Exception as e:
         raise HTTPException(

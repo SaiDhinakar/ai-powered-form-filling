@@ -168,6 +168,82 @@ class ExtractedDataRepository:
     """Repository for ExtractedData model operations."""
     
     @staticmethod
+    def _deep_merge(existing: dict, new: dict) -> dict:
+        """Deep merge two dictionaries. New values take precedence for non-empty values."""
+        merged = existing.copy() if existing else {}
+        if not new:
+            return merged
+        for key, value in new.items():
+            if value and value not in ['', 'N/A', '""', None]:
+                # New non-empty value takes precedence
+                merged[key] = value
+            elif key not in merged:
+                # Key doesn't exist, add it even if empty
+                merged[key] = value
+        return merged
+    
+    @staticmethod
+    def get_single_by_entity(db: Session, entity_id: int) -> Optional[ExtractedData]:
+        """Get the single consolidated extracted data record for an entity."""
+        return db.query(ExtractedData).filter(ExtractedData.entity_id == entity_id).first()
+    
+    @staticmethod
+    def is_file_processed(db: Session, entity_id: int, file_hash: str) -> bool:
+        """Check if a file has already been processed for this entity."""
+        record = db.query(ExtractedData).filter(ExtractedData.entity_id == entity_id).first()
+        if not record or not record.processed_file_hashes:
+            return False
+        return file_hash in record.processed_file_hashes
+    
+    @staticmethod
+    def upsert_or_merge(
+        db: Session,
+        user_id: int,
+        entity_id: int,
+        file_hash: str,
+        status: int = 0,
+        extracted_toon_object: Optional[dict] = None
+    ) -> ExtractedData:
+        """Create or update extracted data for an entity, merging new data with existing.
+        
+        This method ensures only ONE record exists per entity, reducing redundancy.
+        New data is deep-merged with existing data, and file hash is added to the
+        processed_file_hashes list for duplicate detection.
+        """
+        existing = db.query(ExtractedData).filter(ExtractedData.entity_id == entity_id).first()
+        
+        if existing:
+            # Merge new data with existing
+            merged_data = ExtractedDataRepository._deep_merge(
+                existing.extracted_toon_object or {},
+                extracted_toon_object or {}
+            )
+            existing.extracted_toon_object = merged_data
+            existing.status = status if status == 1 else existing.status  # Keep success status
+            
+            # Add file hash to processed list if not already there
+            current_hashes = existing.processed_file_hashes or []
+            if file_hash not in current_hashes:
+                existing.processed_file_hashes = current_hashes + [file_hash]
+            
+            db.commit()
+            db.refresh(existing)
+            return existing
+        else:
+            # Create new record
+            extracted_data = ExtractedData(
+                user_id=user_id,
+                entity_id=entity_id,
+                processed_file_hashes=[file_hash],
+                status=status,
+                extracted_toon_object=extracted_toon_object
+            )
+            db.add(extracted_data)
+            db.commit()
+            db.refresh(extracted_data)
+            return extracted_data
+    
+    @staticmethod
     def create(
         db: Session,
         user_id: int,
@@ -176,18 +252,20 @@ class ExtractedDataRepository:
         status: int = 0,
         extracted_toon_object: Optional[dict] = None
     ) -> ExtractedData:
-        """Create a new extracted data record."""
-        extracted_data = ExtractedData(
+        """Create a new extracted data record.
+        
+        DEPRECATED: Use upsert_or_merge() instead to avoid data redundancy.
+        This method is kept for backward compatibility.
+        """
+        # Delegate to upsert_or_merge to maintain single record per entity
+        return ExtractedDataRepository.upsert_or_merge(
+            db=db,
             user_id=user_id,
             entity_id=entity_id,
             file_hash=file_hash,
             status=status,
             extracted_toon_object=extracted_toon_object
         )
-        db.add(extracted_data)
-        db.commit()
-        db.refresh(extracted_data)
-        return extracted_data
     
     @staticmethod
     def get_by_id(db: Session, extracted_data_id: int) -> Optional[ExtractedData]:

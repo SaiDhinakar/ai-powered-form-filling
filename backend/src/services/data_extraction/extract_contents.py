@@ -29,9 +29,8 @@ def extract_and_save_organize_data(db_session, user_id: int, entity_id: int, fil
         status = 0
         raise ValueError(f"Error generating file hash: {str(e)}")
 
-    data = ExtractedDataRepository.get_by_entity(db_session, entity_id)
-    existing_hashes = [row.file_hash for row in data]
-    if file_hash in existing_hashes:
+    # Check if this file has already been processed for this entity
+    if ExtractedDataRepository.is_file_processed(db_session, entity_id, file_hash):
         print("Extracted data with this file already exists. Skipping extraction.")
         return
 
@@ -78,13 +77,14 @@ def extract_and_save_organize_data(db_session, user_id: int, entity_id: int, fil
                 raise
 
         print(f"[DEBUG] Final extracted Data: {extracted_toon_text}")
-        ExtractedDataRepository.create(
+        # Use upsert_or_merge to consolidate data into single record per entity
+        ExtractedDataRepository.upsert_or_merge(
             db=db_session,
             user_id=user_id,
             entity_id=entity_id,
             file_hash=file_hash,
             status=status,
-            extracted_toon_object=extracted_toon_text  # Store as dict, not str
+            extracted_toon_object=extracted_toon_text  # Will be merged with existing data
         )
         return status
     

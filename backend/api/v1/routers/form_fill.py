@@ -54,7 +54,7 @@ def form_fill(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to read template: {str(e)}")
 
-    # Get ALL entity data and merge them
+    # Get consolidated entity data (single record per entity)
     entity_data = {}
     
     def parse_toon_data(raw_str: str) -> dict:
@@ -67,26 +67,21 @@ def form_fill(
                 key = key.strip().replace('[', '_').replace(']', '').replace(' ', '_').lower()
                 value = value.strip().strip('"')
                 if key and value and value not in ['', 'N/A', '""']:
-                    # Don't overwrite existing values with empty ones
                     if key not in data or not data[key]:
                         data[key] = value
         return data
     
-    for row in ExtractedDataRepository.get_by_entity(db, entity_id):
-        if row.extracted_toon_object:
-            raw = row.extracted_toon_object
-            if isinstance(raw, str):
-                try:
-                    parsed = json.loads(raw)
-                except json.JSONDecodeError:
-                    parsed = parse_toon_data(raw)
-            else:
-                parsed = raw
-            
-            # Merge data - new values don't overwrite existing non-empty values
-            for key, value in parsed.items():
-                if key not in entity_data or not entity_data[key]:
-                    entity_data[key] = value
+    # Fetch single consolidated record (no more looping/merging at query time)
+    extracted_record = ExtractedDataRepository.get_single_by_entity(db, entity_id)
+    if extracted_record and extracted_record.extracted_toon_object:
+        raw = extracted_record.extracted_toon_object
+        if isinstance(raw, str):
+            try:
+                entity_data = json.loads(raw)
+            except json.JSONDecodeError:
+                entity_data = parse_toon_data(raw)
+        else:
+            entity_data = raw
     
     if not entity_data:
         print(f"[WARNING] No extracted data found for entity_id: {entity_id}")
