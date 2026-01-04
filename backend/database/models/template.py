@@ -29,6 +29,7 @@ class Template(Base):
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     
     # Fields
+    name: Mapped[str] = mapped_column(String(255), nullable=True) # Template name (filename or custom)
     template_path: Mapped[str] = mapped_column(Text, nullable=False)
     file_hash: Mapped[str] = mapped_column(String(64), unique=True, nullable=False, index=True)
     lang: Mapped[Optional[str]] = mapped_column(String(10), nullable=True)

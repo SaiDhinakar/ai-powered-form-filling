@@ -14,6 +14,17 @@ init_db()
 
 app = FastAPI(title="AI Powered Form Filling API", version="1.0.0")
 
+from fastapi.middleware.cors import CORSMiddleware
+
+# Enable CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173", "http://localhost:3000"], # Allow Frontend
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 # Include routers
 # Auth router remains public (login/signup)
 app.include_router(auth.router, prefix="/api/v1/auth")

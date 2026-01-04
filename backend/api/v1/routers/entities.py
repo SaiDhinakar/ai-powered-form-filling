@@ -12,7 +12,37 @@ from database.repository import EntityRepository
 from api.v1.models import User
 from api.v1.routers.auth import get_current_user
 
-router = APIRouter(prefix="/entities", tags=["entities"])
+router = APIRouter(tags=["entities"])
+
+from config import settings
+import os
+
+def _attach_documents(entity, user_id: int):
+    """Helper to attach documents from filesystem to entity dict."""
+    if not entity:
+        return None
+    
+    # Convert SQLAlchemy model to dict if needed
+    entity_dict = {c.name: getattr(entity, c.name) for c in entity.__table__.columns}
+    
+    # Define path: uploads/{user_id}/{entity_id}
+    entity_dir = Path(settings.UPLOAD_FILE_PATH) / str(user_id) / str(entity.id)
+    
+    documents = []
+    if entity_dir.exists() and entity_dir.is_dir():
+        for f in entity_dir.iterdir():
+            if f.is_file() and not f.name.startswith('.'):
+                documents.append({
+                    "id": f.name, # Use filename as ID for now
+                    "name": f.name,
+                    "filename": f.name,
+                    "size": f.stat().st_size,
+                    "type": "application/pdf" if f.suffix == ".pdf" else "image/jpeg", # naive type guess
+                    "language": "en" # default/unknown
+                })
+    
+    entity_dict["documents"] = documents
+    return entity_dict
 
 @router.get("/")
 async def list_entities(
@@ -24,18 +54,28 @@ async def list_entities(
     """
     List entities with pagination.
     """
-    return EntityRepository.get_by_user(db, current_user.id, skip=offset, limit=limit)
+    entities = EntityRepository.get_by_user(db, current_user.id, skip=offset, limit=limit)
+    return [_attach_documents(e, current_user.id) for e in entities]
 
 
 @router.get("/{entity_id}")
-async def get_entity(entity_id: int, db: Session = Depends(get_db)):
+async def get_entity(
+    entity_id: int, 
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
     """
     Get a single entity by id.
     """
     entity = EntityRepository.get_by_id(db, entity_id)
     if not entity:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Entity not found")
-    return entity
+    
+    # Security check
+    if entity.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Access denied")
+        
+    return _attach_documents(entity, current_user.id)
 
 
 @router.post("/", status_code=status.HTTP_201_CREATED)

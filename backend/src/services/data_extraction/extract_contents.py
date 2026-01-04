@@ -170,7 +170,10 @@ def extract_and_save_organize_data(db_session, user_id: int, entity_id: int, fil
                 
                 if response.status_code != 200:
                     status = 0
-                    raise ValueError(f"Agent service returned status code {response.status_code}")
+                    error_detail = response.text
+                    status = 0
+                    print(f"[ERROR] Agent service failed: {error_detail}")
+                    raise ValueError(f"Agent service returned status code {response.status_code}. Detail: {error_detail}")
                 
                 agent_response = response.json()
                 print(f"[DEBUG] Agent response: {agent_response}")

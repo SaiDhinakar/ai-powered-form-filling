@@ -17,7 +17,7 @@ from config import settings
 
 load_dotenv()
 
-router = APIRouter(prefix="/entities-data", tags=["entities-data"])
+router = APIRouter(tags=["entities-data"])
 
 def generate_file_hash(file_content: bytes) -> str:
     return hashlib.sha256(file_content).hexdigest()
