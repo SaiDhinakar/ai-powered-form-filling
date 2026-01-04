@@ -7,7 +7,7 @@ import sys
 backend_dir = Path(__file__).parent.parent
 sys.path.insert(0, str(backend_dir))
 
-from ai_agents.agent import extract_data, fill_form
+from ai_agents.agent import extract_data, fill_html_form
 
 app = FastAPI(title="Agent Service", version="1.0.0")
 
@@ -37,23 +37,29 @@ def extract_data_endpoint(document_text: str, lang: str):
 
 @app.post("/agent/fill-form/")
 def fill_form_endpoint(
-    pdf_form_map: Dict[str, Any] = Body(...),
-    pdf_text: str = Body(...),
+    form_fields_map: Dict[str, Any] = Body(...),
     template_lang: str = Body(...),
     entity_data: Dict[str, Any] = Body(...)
 ):
     """
-    Endpoint to fill PDF form fields using AI agent.
+    Endpoint to fill HTML form fields using AI agent.
+    
     Args:
-        pdf_form_map (dict): Mapping of PDF form fields with empty/default values.
-        pdf_text (str): Extracted text from the PDF document.
-        template_lang (str): Language code of the template.
-        entity_data (dict): Canonical entity values in English.
+        form_fields_map (dict): HTML form fields with metadata
+        template_lang (str): Language code of the template
+        entity_data (dict): Extracted entity data in English
     Returns:
-        dict: Filled PDF form fields.
+        dict: Filled form fields
     """
     try:
-        filled = fill_form(pdf_form_map, pdf_text, template_lang, entity_data)
+        print(f"[DEBUG] Filling form for lang: {template_lang}")
+        print(f"[DEBUG] Form fields: {list(form_fields_map.keys())}")
+        print(f"[DEBUG] Entity data keys: {list(entity_data.keys())}")
+        
+        filled = fill_html_form(form_fields_map, template_lang, entity_data)
+        
+        print(f"[DEBUG] Filled form: {filled}")
         return {"filled_form": filled}
     except Exception as e:
+        print(f"[ERROR] {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))

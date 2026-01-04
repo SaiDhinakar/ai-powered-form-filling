@@ -1,4 +1,4 @@
-from typing import Optional, TYPE_CHECKING
+from typing import Optional, List, TYPE_CHECKING
 
 from sqlalchemy import ForeignKey, JSON, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -11,15 +11,18 @@ if TYPE_CHECKING:
 
 
 class ExtractedData(Base):
-    """ExtractedData model representing extracted data from documents.
+    """ExtractedData model representing consolidated extracted data for an entity.
+    
+    This model stores ONE record per entity, containing merged data from all
+    uploaded documents. This reduces redundancy and token consumption for LLM.
     
     Attributes:
         id: Primary key
         user_id: Foreign key to User
-        entity_id: Foreign key to Entity
+        entity_id: Foreign key to Entity (unique - one record per entity)
         status: Status of extraction (1=success, 0=pending/failed)
-        file_hash: Hash of the processed file
-        extracted_toon_object: JSON object containing extracted data
+        processed_file_hashes: JSON list of file hashes that have been processed
+        extracted_toon_object: JSON object containing merged extracted data
     """
     __tablename__ = "extracted_data"
     
@@ -28,11 +31,11 @@ class ExtractedData(Base):
     
     # Foreign Keys
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
-    entity_id: Mapped[int] = mapped_column(ForeignKey("entities.id", ondelete="CASCADE"), nullable=False, index=True)
+    entity_id: Mapped[int] = mapped_column(ForeignKey("entities.id", ondelete="CASCADE"), nullable=False, index=True, unique=True)
     
     # Fields
     status: Mapped[int] = mapped_column(Integer, default=0, nullable=False)  # 1=success, 0=pending/failed
-    file_hash: Mapped[str] = mapped_column(String(64), unique=True, nullable=False, index=True)
+    processed_file_hashes: Mapped[Optional[List[str]]] = mapped_column(JSON, nullable=True, default=list)  # List of processed file hashes
     extracted_toon_object: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
     
     # Relationships

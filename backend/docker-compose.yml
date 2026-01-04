@@ -1,13 +1,33 @@
+version: '3.8'
+
 services:
-  minio:
-    image: minio/minio:latest
-    container_name: minio
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ai-form-filling-backend
     ports:
-      - "9000:9000"
-      - "9001:9001"
-    environment:
-      MINIO_ROOT_USER: minioadmin
-      MINIO_ROOT_PASSWORD: minioadmin
-    command: server /data --console-address ":9001"
+      - "8000:8000"   # FastAPI backend
+      - "8907:8907"   # AI Agent service
+      - "8909:8909"   # OCR service
     volumes:
-      - ./:/data
+      - ./uploads:/app/uploads
+      - ./outputs:/app/outputs
+      - ./app.db:/app/app.db
+    environment:
+      - DATABASE_URL=sqlite:///./app.db
+      - SECRET_KEY=${SECRET_KEY:-supersecretkey}
+      - ALGORITHM=HS256
+      - ACCESS_TOKEN_EXPIRE_MINUTES=30
+      - UPLOAD_FILE_PATH=/app/uploads
+      - OUTPUT_FILE_PATH=/app/outputs
+      - AGENTS_API_ENDPOINT=http://localhost:8907/agent
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - MODEL=${MODEL:-gemini-2.5-flash}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
