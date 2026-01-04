@@ -11,6 +11,225 @@ import json
 import re
 
 
+# Semantic field mappings for common form fields
+# Maps field name patterns to semantic descriptions and likely data source keys
+SEMANTIC_FIELD_MAP = {
+    # Name fields
+    r'(full_?name|name|applicant_?name|resident_?name)': {
+        'semantic_type': 'person_name',
+        'description': 'Full name of the person/applicant',
+        'likely_keys': ['full_name', 'name', 'applicant_name', 'resident_name']
+    },
+    r'(father_?name|fathers?_?name)': {
+        'semantic_type': 'father_name',
+        'description': 'Father\'s full name',
+        'likely_keys': ['father_name', 'fathers_name', 'parent_name']
+    },
+    r'(mother_?name|mothers?_?name)': {
+        'semantic_type': 'mother_name',
+        'description': 'Mother\'s full name',
+        'likely_keys': ['mother_name', 'mothers_name']
+    },
+    r'(spouse_?name|husband_?name|wife_?name)': {
+        'semantic_type': 'spouse_name',
+        'description': 'Spouse/Husband/Wife name',
+        'likely_keys': ['spouse_name', 'husband_name', 'wife_name']
+    },
+    r'(guardian_?name|parent_?guardian)': {
+        'semantic_type': 'guardian_name',
+        'description': 'Guardian or parent name',
+        'likely_keys': ['guardian_name', 'parent_guardian_name', 'father_name', 'mother_name']
+    },
+    
+    # ID fields
+    r'(aadhaar|aadhar|uid)': {
+        'semantic_type': 'aadhaar_number',
+        'description': 'Aadhaar/UID number (12 digits)',
+        'likely_keys': ['aadhaar_number', 'aadhar_number', 'uid', 'aadhaar']
+    },
+    r'(pan_?(number|no)?)': {
+        'semantic_type': 'pan_number',
+        'description': 'PAN card number (10 alphanumeric)',
+        'likely_keys': ['pan_number', 'pan', 'pan_no']
+    },
+    r'(passport)': {
+        'semantic_type': 'passport_number',
+        'description': 'Passport number',
+        'likely_keys': ['passport_number', 'passport']
+    },
+    r'(voter_?id|epic)': {
+        'semantic_type': 'voter_id',
+        'description': 'Voter ID/EPIC number',
+        'likely_keys': ['voter_id', 'epic_number', 'voter_id_number']
+    },
+    r'(driving_?license|dl_?(number|no)?)': {
+        'semantic_type': 'driving_license',
+        'description': 'Driving license number',
+        'likely_keys': ['driving_license_number', 'dl_number', 'driving_license']
+    },
+    r'(enrol(l)?ment_?(id|no|number)?)': {
+        'semantic_type': 'enrollment_id',
+        'description': 'Enrollment/Registration ID',
+        'likely_keys': ['enrollment_number', 'enrolment_id', 'registration_number']
+    },
+    
+    # Contact fields
+    r'(mobile|phone|contact)_?(number|no)?': {
+        'semantic_type': 'mobile_number',
+        'description': 'Mobile/Phone number (10 digits)',
+        'likely_keys': ['mobile_number', 'phone_number', 'contact_number', 'mobile']
+    },
+    r'(email|e_?mail)': {
+        'semantic_type': 'email',
+        'description': 'Email address',
+        'likely_keys': ['email', 'email_address', 'email_id']
+    },
+    
+    # Address fields
+    r'(house_?(no|number)?|building|flat)': {
+        'semantic_type': 'house_number',
+        'description': 'House/Building/Flat number',
+        'likely_keys': ['house_number', 'building_number', 'flat_number', 'house_no']
+    },
+    r'(street|road|lane)': {
+        'semantic_type': 'street',
+        'description': 'Street/Road/Lane name',
+        'likely_keys': ['street', 'road', 'lane', 'street_name']
+    },
+    r'(landmark)': {
+        'semantic_type': 'landmark',
+        'description': 'Nearby landmark',
+        'likely_keys': ['landmark', 'near_landmark']
+    },
+    r'(village|town|city|vtc)': {
+        'semantic_type': 'village_town_city',
+        'description': 'Village/Town/City name',
+        'likely_keys': ['village_town_city', 'city', 'town', 'village', 'vtc']
+    },
+    r'(post_?office|po)': {
+        'semantic_type': 'post_office',
+        'description': 'Post Office name',
+        'likely_keys': ['post_office', 'po', 'post_office_name']
+    },
+    r'(sub_?district|taluk|tehsil|mandal)': {
+        'semantic_type': 'sub_district',
+        'description': 'Sub-district/Taluk/Tehsil/Mandal',
+        'likely_keys': ['sub_district', 'taluk', 'tehsil', 'mandal']
+    },
+    r'(district)': {
+        'semantic_type': 'district',
+        'description': 'District name',
+        'likely_keys': ['district', 'district_name']
+    },
+    r'(state|province)': {
+        'semantic_type': 'state',
+        'description': 'State/Province name',
+        'likely_keys': ['state', 'province', 'state_name']
+    },
+    r'(country)': {
+        'semantic_type': 'country',
+        'description': 'Country name',
+        'likely_keys': ['country', 'country_name']
+    },
+    r'(pin_?code|postal_?code|zip)': {
+        'semantic_type': 'pincode',
+        'description': 'PIN/Postal/ZIP code (6 digits for India)',
+        'likely_keys': ['pincode', 'pin_code', 'postal_code', 'zip_code', 'pin']
+    },
+    r'(address_?line|address[_\s]?1|address1)': {
+        'semantic_type': 'address_line_1',
+        'description': 'Address line 1',
+        'likely_keys': ['address_line_1', 'address1', 'address']
+    },
+    r'(address[_\s]?2|address2)': {
+        'semantic_type': 'address_line_2',
+        'description': 'Address line 2',
+        'likely_keys': ['address_line_2', 'address2']
+    },
+    
+    # Personal fields
+    r'(gender|sex)': {
+        'semantic_type': 'gender',
+        'description': 'Gender (male/female/transgender)',
+        'likely_keys': ['gender', 'sex']
+    },
+    r'(d[_\s]?o[_\s]?b|date_?of_?birth|birth_?date)': {
+        'semantic_type': 'date_of_birth',
+        'description': 'Date of birth (DD/MM/YYYY or YYYY-MM-DD)',
+        'likely_keys': ['date_of_birth', 'dob', 'birth_date', 'birthdate']
+    },
+    r'(age)': {
+        'semantic_type': 'age',
+        'description': 'Age in years',
+        'likely_keys': ['age', 'current_age']
+    },
+    r'(nationality)': {
+        'semantic_type': 'nationality',
+        'description': 'Nationality/Citizenship',
+        'likely_keys': ['nationality', 'citizenship']
+    },
+    
+    # Financial fields
+    r'(bank_?name)': {
+        'semantic_type': 'bank_name',
+        'description': 'Bank name',
+        'likely_keys': ['bank_name', 'bank']
+    },
+    r'(branch_?name|branch)': {
+        'semantic_type': 'branch_name',
+        'description': 'Bank branch name',
+        'likely_keys': ['branch_name', 'branch', 'bank_branch']
+    },
+    r'(account_?(number|no)?|a\/?c)': {
+        'semantic_type': 'account_number',
+        'description': 'Bank account number',
+        'likely_keys': ['account_number', 'account_no', 'bank_account']
+    },
+    r'(ifsc)': {
+        'semantic_type': 'ifsc_code',
+        'description': 'Bank IFSC code',
+        'likely_keys': ['ifsc_code', 'ifsc', 'bank_ifsc']
+    },
+    
+    # Date fields
+    r'(issue_?date)': {
+        'semantic_type': 'issue_date',
+        'description': 'Issue/Start date',
+        'likely_keys': ['issue_date', 'date_of_issue', 'start_date']
+    },
+    r'(expiry_?date|valid_?until|valid_?till)': {
+        'semantic_type': 'expiry_date',
+        'description': 'Expiry/End date',
+        'likely_keys': ['expiry_date', 'date_of_expiry', 'valid_until', 'end_date']
+    },
+}
+
+
+def _get_semantic_info(field_name: str, label: str = '') -> Dict[str, Any]:
+    """
+    Get semantic information for a form field based on its name and label.
+    
+    Args:
+        field_name: The field's name attribute
+        label: The field's label text
+        
+    Returns:
+        Dictionary with semantic type, description, and likely data keys
+    """
+    combined_text = f"{field_name} {label}".lower()
+    
+    for pattern, info in SEMANTIC_FIELD_MAP.items():
+        if re.search(pattern, combined_text, re.IGNORECASE):
+            return info.copy()
+    
+    # Default fallback - try to infer from field name
+    return {
+        'semantic_type': 'unknown',
+        'description': label if label else field_name.replace('_', ' ').title(),
+        'likely_keys': [field_name.lower()]
+    }
+
+
 def parse_html_template(html_content: str) -> Dict[str, Any]:
     """
     Parse HTML template and extract form fields with their metadata.
@@ -43,6 +262,12 @@ def parse_html_template(html_content: str) -> Dict[str, Any]:
             'placeholder': element.get('placeholder', ''),
             'default_value': element.get('value', ''),
         }
+        
+        # Add semantic information for better LLM matching
+        semantic_info = _get_semantic_info(field_name, field_info['label'])
+        field_info['semantic_type'] = semantic_info['semantic_type']
+        field_info['description'] = semantic_info['description']
+        field_info['likely_data_keys'] = semantic_info['likely_keys']
         
         # Handle select dropdowns
         if element.name == 'select':

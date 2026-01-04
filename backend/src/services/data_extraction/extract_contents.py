@@ -1,6 +1,8 @@
 import sys
 import hashlib
 from pathlib import Path
+from datetime import datetime
+import re
 import requests
 
 # Add backend directory to Python path
@@ -11,6 +13,110 @@ from database.session import Session, get_db
 from database.repository import ExtractedDataRepository
 from src.services.data_extraction.pdf_extract import extract_text_from_pdf_or_img_with_metadata
 from config import settings
+
+
+def calculate_age_from_dob(dob_str: str) -> int | None:
+    """
+    Calculate age from date of birth string.
+    
+    Supports formats:
+    - DD/MM/YYYY, DD-MM-YYYY
+    - YYYY/MM/DD, YYYY-MM-DD
+    - DD.MM.YYYY
+    
+    Args:
+        dob_str: Date of birth string
+        
+    Returns:
+        Age in years, or None if parsing fails
+    """
+    if not dob_str or not isinstance(dob_str, str):
+        return None
+    
+    dob_str = dob_str.strip()
+    
+    # Common date formats to try
+    date_formats = [
+        '%d/%m/%Y',   # DD/MM/YYYY
+        '%d-%m-%Y',   # DD-MM-YYYY
+        '%d.%m.%Y',   # DD.MM.YYYY
+        '%Y/%m/%d',   # YYYY/MM/DD
+        '%Y-%m-%d',   # YYYY-MM-DD
+        '%d %b %Y',   # DD Mon YYYY (e.g., 15 Jan 1990)
+        '%d %B %Y',   # DD Month YYYY (e.g., 15 January 1990)
+    ]
+    
+    dob_date = None
+    for fmt in date_formats:
+        try:
+            dob_date = datetime.strptime(dob_str, fmt)
+            break
+        except ValueError:
+            continue
+    
+    if not dob_date:
+        # Try to extract year if full parsing fails
+        year_match = re.search(r'\b(19|20)\d{2}\b', dob_str)
+        if year_match:
+            try:
+                birth_year = int(year_match.group())
+                current_year = datetime.now().year
+                if 1900 < birth_year <= current_year:
+                    return current_year - birth_year
+            except:
+                pass
+        return None
+    
+    # Calculate age
+    today = datetime.now()
+    age = today.year - dob_date.year
+    
+    # Adjust if birthday hasn't occurred yet this year
+    if (today.month, today.day) < (dob_date.month, dob_date.day):
+        age -= 1
+    
+    return age if age >= 0 else None
+
+
+def enrich_extracted_data(data: dict) -> dict:
+    """
+    Enrich extracted data with computed fields.
+    
+    Currently:
+    - Calculates age from DOB if age is missing
+    
+    Args:
+        data: Extracted data dictionary
+        
+    Returns:
+        Enriched data dictionary
+    """
+    if not isinstance(data, dict):
+        return data
+    
+    enriched = data.copy()
+    
+    # Calculate age from DOB if age is missing
+    age_keys = ['age', 'current_age']
+    dob_keys = ['date_of_birth', 'dob', 'birth_date', 'birthdate', 'date_of_birth_dob']
+    
+    # Check if age already exists
+    has_age = any(
+        key in enriched and enriched[key] and str(enriched[key]).strip()
+        for key in age_keys
+    )
+    
+    if not has_age:
+        # Try to find DOB and calculate age
+        for dob_key in dob_keys:
+            if dob_key in enriched and enriched[dob_key]:
+                calculated_age = calculate_age_from_dob(str(enriched[dob_key]))
+                if calculated_age is not None:
+                    enriched['age'] = str(calculated_age)
+                    print(f"[DEBUG] Calculated age {calculated_age} from {dob_key}: {enriched[dob_key]}")
+                    break
+    
+    return enriched
 
 def extract_and_save_organize_data(db_session, user_id: int, entity_id: int, file_path: str, lang: str = 'en'):
     """
@@ -71,7 +177,11 @@ def extract_and_save_organize_data(db_session, user_id: int, entity_id: int, fil
                 extracted_toon_text = agent_response.get("extracted_data", "")
                 if not extracted_toon_text:
                     status = 0
-                    raise ValueError("No data extracted by agent service.")            
+                    raise ValueError("No data extracted by agent service.")
+                
+                # Enrich data with computed fields (e.g., calculate age from DOB)
+                if isinstance(extracted_toon_text, dict):
+                    extracted_toon_text = enrich_extracted_data(extracted_toon_text)
             except Exception:
                 status = 0
                 raise
