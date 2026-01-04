@@ -118,18 +118,20 @@ class TemplateRepository:
         path: str,
         file_hash: str,
         lang: Optional[str] = None,
+        template_type: str = 'html',
         form_fields: Optional[dict] = None,
-        pdf_data: Optional[dict] = None
+        html_structure: Optional[dict] = None
     ) -> Template:
         """Create a new template."""
         import json
         template = Template(
             user_id=user_id,
-            pdf_path=path,
+            template_path=path,
             file_hash=file_hash,
             lang=lang,
+            template_type=template_type,
             form_fields=json.dumps(form_fields) if form_fields is not None else None,
-            pdf_data=json.dumps(pdf_data) if pdf_data is not None else None
+            html_structure=json.dumps(html_structure) if html_structure is not None else None
         )
         db.add(template)
         db.commit()

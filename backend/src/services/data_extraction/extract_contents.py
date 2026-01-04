@@ -77,14 +77,14 @@ def extract_and_save_organize_data(db_session, user_id: int, entity_id: int, fil
                 status = 0
                 raise
 
-        print(f"[DEBUG] Final extracted TOON Data: {extracted_toon_text}")
+        print(f"[DEBUG] Final extracted Data: {extracted_toon_text}")
         ExtractedDataRepository.create(
             db=db_session,
             user_id=user_id,
             entity_id=entity_id,
             file_hash=file_hash,
             status=status,
-            extracted_toon_object=str(extracted_toon_text)
+            extracted_toon_object=extracted_toon_text  # Store as dict, not str
         )
         return status
     

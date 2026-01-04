@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aadhaar Enrolment/Correction/Update Form</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 9pt;
+            line-height: 1.3;
+            background: white;
+            padding: 20px;
+        }
+
+        .form-container {
+            max-width: 250mm;
+            width: 100%;
+            margin: 0 auto;
+            background: white;
+            border: 4px solid black;
+            box-sizing: border-box;
+        }
+
+        .header {
+            border-bottom: 2px solid black;
+            padding: 10px;
+            text-align: center;
+        }
+
+        .header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+
+        .header-left,
+        .header-right {
+            font-size: 8pt;
+            font-weight: bold;
+        }
+
+        .header-title {
+            font-size: 11pt;
+            font-weight: bold;
+            margin: 5px 0;
+        }
+
+        .header-subtitle {
+            font-size: 7pt;
+            margin: 3px 0;
+        }
+
+        .notice-box {
+            border: 1px solid black;
+            padding: 8px;
+            margin: 10px;
+            background: #f0f0f0;
+            font-size: 8pt;
+        }
+
+        .form-body {
+            padding: 10px;
+        }
+
+        .form-row {
+            display: flex;
+            margin-bottom: 3px;
+            min-height: 25px;
+            align-items: center;
+            width: 100%;
+            /* Ensure row doesn't exceed container */
+        }
+
+        .field-label {
+            font-size: 8pt;
+            margin-right: 10px;
+            white-space: nowrap;
+            /* Prevent label from wrapping awkwardly */
+        }
+
+        input[type="radio"],
+        input[type="checkbox"] {
+            width: 14px;
+            height: 14px;
+            margin: 0 5px 0 3px;
+            vertical-align: middle;
+            cursor: pointer;
+        }
+
+        .input-box {
+            border: 1px solid black;
+            display: inline-block;
+            min-width: 50px;
+            /* Reduced from 120px to prevent push */
+            height: 24px;
+            margin: 0 2px;
+            padding: 2px 5px;
+            font-size: 9pt;
+        }
+
+        .input-box-large {
+            border: 1px solid black;
+            flex-grow: 1;
+            /* Allow to fill space */
+            width: 100%;
+            height: 24px;
+            padding: 2px 5px;
+            font-size: 9pt;
+            box-sizing: border-box;
+        }
+
+        .section-number {
+            font-weight: bold;
+            margin-right: 8px;
+            flex-shrink: 0;
+        }
+
+        .digit-boxes {
+            display: inline-block;
+        }
+
+        .digit-box {
+            border: 1px solid black;
+            text-align: left;
+            padding: 2px 5px;
+            font-size: 9pt;
+            letter-spacing: 3px;
+        }
+
+        .aadhaar-input {
+            width: 180px;
+            height: 24px;
+        }
+
+        .mobile-input {
+            width: 150px;
+            height: 24px;
+        }
+
+        .pin-input {
+            width: 100px;
+            height: 24px;
+        }
+
+        .date-input {
+            width: 30px;
+            height: 24px;
+            text-align: center;
+        }
+
+        .year-input {
+            width: 50px;
+            height: 24px;
+            text-align: center;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 5px 0;
+            table-layout: fixed;
+            /* Added to help with overflow */
+        }
+
+        /* Adjust tables with margins to prevent right-side overflow */
+        table[style*="margin-left"] {
+            width: calc(100% - 25px) !important;
+        }
+
+        td {
+            border: 1px solid black;
+            padding: 8px;
+            font-size: 8pt;
+            vertical-align: top;
+            overflow: hidden;
+            /* Prevent cell content from pushing border */
+        }
+
+        .signature-box {
+            border: 1px solid black;
+            height: 60px;
+            margin: 10px 0;
+            text-align: center;
+            padding: 20px;
+            font-size: 8pt;
+        }
+
+        .bold {
+            font-weight: bold;
+        }
+
+        .small-text {
+            font-size: 7pt;
+        }
+
+        .indent {
+            margin-left: 20px;
+        }
+
+        hr {
+            border: 0;
+            border-top: 1px solid black;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="form-container">
+        <!-- Header Section -->
+        <div class="header">
+            <div class="header-top">
+                <div class="header-left">Unique Identification Authority of India</div>
+                <div class="header-right">Government of India</div>
+            </div>
+            <div class="header-subtitle">
+                Under Section 3 of THE AADHAAR (TARGETED DELIVERY OF FINANCIAL AND OTHER SUBSIDIES, BENEFITS AND
+                SERVICES) ACT, 2016 (Aadhaar Act)
+            </div>
+            <div class="header-title">AADHAAR ENROLMENT/ CORRECTION/ UPDATE FORM</div>
+        </div>
+
+        <!-- Notice Box -->
+        <div class="notice-box">
+            <strong>Aadhaar Enrolment and Mandatory Biometric Update is free. No charges are applicable for Form. In
+                case of Correction/ Update, provide your Aadhaar Number (UID), Full Name and only that field which needs
+                Correction/ Update.</strong><br>
+            <span class="small-text">Please follow the instructions overleaf while filling up the form. Use capital
+                letters only.</span>
+        </div>
+
+        <!-- Form Body -->
+        <div class="form-body">
+            <!-- Row 1: Resident Type -->
+            <div class="form-row">
+                <span class="section-number">1</span>
+                <input type="radio" name="residentType" value="resident"> Resident
+                <span style="margin-left: 30px;"></span>
+                <input type="radio" name="residentType" value="nri"> Non-Resident Indian (NRI*)
+            </div>
+
+            <!-- Row 2: Pre-Enrolment ID and Update Type -->
+            <div class="form-row" style="margin-top: 8px;">
+                <span class="section-number">2.1</span>
+                <span class="field-label">Pre Enrolment ID (If applicable):</span>
+                <input type="text" name="pre_enrolment_id" class="input-box">
+            </div>
+
+            <div class="form-row">
+                <span style="margin-left: 25px;"></span>
+                <input type="checkbox" name="updateBiometric"> Biometric Update (Photo + Fingerprint + Iris)
+                <span style="margin-left: 15px;"></span>
+                <input type="checkbox" name="updateMobile"> Mobile
+                <span style="margin-left: 15px;"></span>
+                <input type="checkbox" name="updateName"> Name
+                <span style="margin-left: 15px;"></span>
+                <input type="checkbox" name="updateGender"> Gender
+                <span style="margin-left: 15px;"></span>
+                <input type="checkbox" name="updateDOB"> Date of Birth
+            </div>
+
+            <div class="form-row">
+                <span style="margin-left: 25px;"></span>
+                <input type="checkbox" name="updateAddress"> Address
+                <span style="margin-left: 15px;"></span>
+                <input type="checkbox" name="updateEmail"> Email
+            </div>
+
+            <!-- Row 2: Aadhaar Number for Update -->
+            <div class="form-row" style="margin-top: 5px;">
+                <span class="section-number">2</span>
+                <span class="field-label">In case of Update provide Aadhaar Number (UID):</span>
+                <input type="text" name="aadhaar_number" class="digit-box aadhaar-input" maxlength="12" placeholder="XXXX XXXX XXXX">
+            </div>
+
+            <!-- Row 3: Full Name -->
+            <div class="form-row" style="margin-top: 8px;">
+                <span class="section-number">3</span>
+                <span class="field-label">Full Name:</span>
+                <input type="text" name="full_name" class="input-box-large">
+            </div>
+
+            <!-- Row 4: Gender -->
+            <div class="form-row" style="margin-top: 8px;">
+                <span class="section-number">4</span>
+                <span class="field-label">Gender:</span>
+                <input type="radio" name="gender" value="male"> Male
+                <span style="margin-left: 30px;"></span>
+                <input type="radio" name="gender" value="female"> Female
+                <span style="margin-left: 30px;"></span>
+                <input type="radio" name="gender" value="transgender"> Transgender
+            </div>
+
+            <!-- Row 5: Date of Birth / Age -->
+            <div class="form-row" style="margin-top: 8px;">
+                <span class="section-number">5</span>
+                <span class="field-label">Date of Birth:</span>
+                <input type="text" name="dob_day" class="digit-box date-input" maxlength="2" placeholder="DD">
+                <span style="margin: 0 3px;">|</span>
+                <input type="text" name="dob_month" class="digit-box date-input" maxlength="2" placeholder="MM">
+                <span style="margin: 0 3px;">|</span>
+                <input type="text" name="dob_year" class="digit-box year-input" maxlength="4" placeholder="YYYY">
+                <span style="margin: 0 15px;">OR</span>
+                <span class="field-label">Age:</span>
+                <input type="text" name="age" class="input-box" style="width: 40px;">
+                <span class="field-label">Yrs</span>
+                <span style="margin-left: 30px;"></span>
+                <input type="radio" name="dobType" value="declared"> Declared
+                <span style="margin-left: 15px;"></span>
+                <input type="radio" name="dobType" value="verified"> Verified
+            </div>
+
+            <!-- Row 6: Address -->
+            <div class="form-row" style="margin-top: 8px;">
+                <span class="section-number">6</span>
+                <span class="field-label">Address: C/o NAME</span>
+                <input type="text" name="care_of_name" class="input-box-large">
+            </div>
+
+            <!-- Address Fields Table -->
+            <table style="margin-left: 25px; margin-top: 5px;">
+                <tr>
+                    <td style="width: 50%;">
+                        House No./ Bldg./ Apt:
+                        <input type="text" name="house_number" class="input-box-large" style="margin-top: 5px;">
+                    </td>
+                    <td style="width: 50%;">
+                        Street/ Road/ Lane:
+                        <input type="text" name="street" class="input-box-large" style="margin-top: 5px;">
+                    </td>
+                </tr>
+            </table>
+
+            <table style="margin-left: 25px; margin-top: 2px;">
+                <tr>
+                    <td style="width: 50%;">
+                        Landmark:
+                        <input type="text" name="landmark" class="input-box-large" style="margin-top: 5px;">
+                    </td>
+                    <td style="width: 50%;">
+                        Area/ Locality/ Sector:
+                        <input type="text" name="area_locality" class="input-box-large" style="margin-top: 5px;">
+                    </td>
+                </tr>
+            </table>
+
+            <table style="margin-left: 25px; margin-top: 2px;">
+                <tr>
+                    <td style="width: 50%;">
+                        Village/ Town/ City:
+                        <input type="text" name="village_town_city" class="input-box-large" style="margin-top: 5px;">
+                    </td>
+                    <td style="width: 50%;">
+                        Post Office:
+                        <input type="text" name="post_office" class="input-box-large" style="margin-top: 5px;">
+                    </td>
+                </tr>
+            </table>
+
+            <table style="margin-left: 25px; margin-top: 2px;">
+                <tr>
+                    <td style="width: 33%;">
+                        District:
+                        <input type="text" name="district" class="input-box-large" style="margin-top: 5px;">
+                    </td>
+                    <td style="width: 33%;">
+                        Sub-District:
+                        <input type="text" name="sub_district" class="input-box-large" style="margin-top: 5px;">
+                    </td>
+                    <td style="width: 34%;">
+                        State:
+                        <input type="text" name="state" class="input-box-large" style="margin-top: 5px;">
+                    </td>
+                </tr>
+            </table>
+
+            <table style="margin-left: 25px; margin-top: 2px;">
+                <tr>
+                    <td style="width: 50%;">
+                        E-Mail:
+                        <input type="email" name="email" class="input-box-large" style="margin-top: 5px;">
+                    </td>
+                    <td style="width: 25%;">
+                        Mobile No.:
+                        <div style="margin-top: 3px;">
+                            <input type="text" name="mobile_number" class="digit-box mobile-input" maxlength="10" placeholder="XXXXXXXXXX">
+                        </div>
+                    </td>
+                    <td style="width: 25%;">
+                        PIN Code:
+                        <div style="margin-top: 3px;">
+                            <input type="text" name="pincode" class="digit-box pin-input" maxlength="6" placeholder="XXXXXX">
+                        </div>
+                    </td>
+                </tr>
+            </table>
+
+            <!-- Row 7: Details of Parent/Guardian -->
+            <div class="form-row" style="margin-top: 8px;">
+                <span class="section-number">7</span>
+                <span class="field-label bold">Details of:</span>
+                <input type="radio" name="parentRelation" value="father"> Father
+                <span style="margin-left: 15px;"></span>
+                <input type="radio" name="parentRelation" value="mother"> Mother
+                <span style="margin-left: 15px;"></span>
+                <input type="radio" name="parentRelation" value="guardian"> Guardian
+                <span style="margin-left: 15px;"></span>
+                <input type="radio" name="parentRelation" value="husband"> Husband
+                <span style="margin-left: 15px;"></span>
+                <input type="radio" name="parentRelation" value="wife"> Wife
+            </div>
+
+            <div class="form-row small-text" style="margin-left: 25px;">
+                For children below 5 years Father/Mother/Guardian's details are mandatory. Adults can opt not to specify
+                this information.
+            </div>
+
+            <div class="form-row" style="margin-left: 25px; margin-top: 5px;">
+                <span class="field-label">Name:</span>
+                <input type="text" name="parent_guardian_name" class="input-box">
+                <span class="field-label" style="margin-left: 20px;">EID/ Aadhaar No.:</span>
+                <input type="text" name="parent_guardian_aadhaar" class="digit-box aadhaar-input" maxlength="14" placeholder="XXXXXXXXXXXXXX">
+                <span class="field-label small-text" style="margin-left: 10px;">dd | mm | yyyy | hh : mm : ss</span>
+            </div>
+
+            <!-- Row 8: Verification Type -->
+            <div class="form-row" style="margin-top: 8px;">
+                <span class="section-number">8</span>
+                <span class="field-label bold">Verification Type:</span>
+                <input type="radio" name="verificationType" value="document"> Document Based
+                <span style="margin-left: 15px;"></span>
+                <input type="radio" name="verificationType" value="introducer"> Introducer Based
+                <span style="margin-left: 15px;"></span>
+                <input type="radio" name="verificationType" value="hof"> Head of Family (HoF) Based
+            </div>
+
+            <div class="form-row small-text" style="margin-left: 25px;">
+                Select only one of the above. Select Introducer or Head of Family only if you do not possess any
+                documentary proof of identity and/or address. Introducer and Head of Family details are not required in
+                case of Document based verification.
+            </div>
+
+            <!-- Document Based Section -->
+            <div style="margin-left: 25px; margin-top: 8px;">
+                <div class="bold" style="font-size: 8pt; margin-bottom: 5px;">For Document Based (Write Names of the
+                    documents produced. Refer overleaf of this form for list of valid documents)</div>
+
+                <table>
+                    <tr>
+                        <td style="width: 25%;">
+                            a. POI
+                            <input type="text" name="doc_poi" class="input-box-large" style="margin-top: 5px;">
+                        </td>
+                        <td style="width: 25%;">
+                            b. POA
+                            <input type="text" name="doc_poa" class="input-box-large" style="margin-top: 5px;">
+                        </td>
+                        <td style="width: 25%;">
+                            c. DOB
+                            <input type="text" name="doc_dob" class="input-box-large" style="margin-top: 5px;">
+                        </td>
+                        <td style="width: 25%;">
+                            d. POR (Mandatory in case of Verified Date of Birth)
+                            <input type="text" name="doc_por" class="input-box-large" style="margin-top: 5px;">
+                        </td>
+                    </tr>
+                </table>
+            </div>
+
+            <!-- Row 9: Introducer/HoF Section -->
+            <div class="form-row" style="margin-top: 8px;">
+                <span class="section-number">9</span>
+                <span class="field-label bold">For Introducer Based –</span>
+                <span class="field-label">Introducer's Aadhaar No.:</span>
+                <input type="text" name="introducer_aadhaar" class="digit-box aadhaar-input" maxlength="12" placeholder="XXXX XXXX XXXX">
+            </div>
+
+            <div class="form-row" style="margin-left: 25px;">
+                <span class="field-label bold">For HoF Based - Details of :</span>
+                <input type="radio" name="hofRelation" value="father"> Father
+                <span style="margin-left: 15px;"></span>
+                <input type="radio" name="hofRelation" value="mother"> Mother
+                <span style="margin-left: 15px;"></span>
+                <input type="radio" name="hofRelation" value="guardian"> Guardian
+                <span style="margin-left: 15px;"></span>
+                <input type="radio" name="hofRelation" value="husband"> Husband
+                <span style="margin-left: 15px;"></span>
+                <input type="radio" name="hofRelation" value="wife"> Wife
+                <span class="small-text" style="margin-left: 15px;">(Mandatory in case of HoF based Enrolment/
+                    Update)</span>
+            </div>
+
+            <div class="form-row" style="margin-left: 25px; margin-top: 5px;">
+                <span class="field-label">HoF's EID/ Aadhaar No.:</span>
+                <input type="text" name="hof_aadhaar" class="digit-box aadhaar-input" maxlength="14" placeholder="XXXXXXXXXXXXXX">
+                <span class="field-label small-text" style="margin-left: 10px;">dd | mm | yyyy | hh : mm : ss</span>
+            </div>
+
+            <div class="form-row" style="margin-left: 25px; margin-top: 5px;">
+                <span class="small-text">I hereby confirm the identity and address of
+                    _______________________________________ as being true, correct and accurate.</span>
+            </div>
+
+            <div class="form-row" style="margin-left: 25px; margin-top: 5px;">
+                <span class="field-label">Introducer/ HoF's Name:</span>
+                <input type="text" name="introducer_hof_name" class="input-box">
+            </div>
+
+            <table style="margin-left: 25px; margin-top: 5px;">
+                <tr>
+                    <td style="width: 100%; vertical-align: top;">
+                        Signature of Introducer/ HoF
+                        <div style="margin-top: 5px; position: relative;">
+                            <input type="file" id="introducerSignature" accept="image/*"
+                                style="position: absolute; opacity: 0; width: 100%; height: 100%; cursor: pointer; z-index: 10;"
+                                onchange="loadImage(event, 'introducerSigImg', 'introducerSigPlaceholder')">
+                            <div style="width: 100%; height: 60px; border: 1px solid black; background: white; display: flex; align-items: center; justify-content: center; cursor: pointer; position: relative;"
+                                onclick="document.getElementById('introducerSignature').click()">
+                                <img id="introducerSigImg" style="max-width: 100%; max-height: 100%; display: none;">
+                                <span id="introducerSigPlaceholder" style="color: #999; font-size: 8pt;">Click to upload
+                                    signature</span>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+            </table>
+
+            <hr>
+
+            <!-- Disclosure Section -->
+            <div style="margin-top: 10px; font-size: 7pt;">
+                <div class="bold">Disclosure under section 3(2) of THE AADHAAR (TARGETED DELIVERY OF FINANCIAL AND OTHER
+                    SUBSIDIES, BENEFITS AND SERVICES) ACT, 2016</div>
+                <p style="margin-top: 5px; line-height: 1.4;">
+                    I confirm that I have been residing in India for at least 182 days in the preceding 12 months / I am
+                    Non Resident Indian (NRI) & information (including biometrics) provided by me to the UIDAI is my own
+                    and is true, correct and accurate. I am aware that my information including biometrics will be used
+                    for generation of Aadhaar and authentication. I understand that my identity information (except core
+                    biometric) may be provided to an agency only with my consent during authentication or as per the
+                    provisions of the Aadhaar Act. I have a right to access my identity information (except core
+                    biometrics) following the procedure laid down by UIDAI.
+                </p>
+            </div>
+
+            <!-- Signature and Verifier Section -->
+            <table style="margin-top: 10px;">
+                <tr>
+                    <td style="width: 50%; vertical-align: top;">
+                        Applicant's signature/ Thumbprint
+                        <div style="margin-top: 5px; position: relative;">
+                            <input type="file" id="applicantSignature" accept="image/*"
+                                style="position: absolute; opacity: 0; width: 100%; height: 100%; cursor: pointer; z-index: 10;"
+                                onchange="loadImage(event, 'applicantSigImg', 'applicantSigPlaceholder')">
+                            <div style="width: 100%; height: 60px; border: 1px solid black; background: white; display: flex; align-items: center; justify-content: center; cursor: pointer; position: relative;"
+                                onclick="document.getElementById('applicantSignature').click()">
+                                <img id="applicantSigImg" style="max-width: 100%; max-height: 100%; display: none;">
+                                <span id="applicantSigPlaceholder" style="color: #999; font-size: 8pt;">Click to upload
+                                    signature</span>
+                            </div>
+                        </div>
+                        <div class="small-text" style="margin-top: 5px;">Note: In case of minor, the signature will be
+                            done by parent/guardian. In case of incapacitated person, the signature will be done by
+                            Legal Guardian of Incapacitated Person</div>
+                    </td>
+                    <td style="width: 50%; vertical-align: top;">
+                        Verifier's Stamp and Signature:
+                        <div style="margin-top: 5px; position: relative;">
+                            <input type="file" id="verifierSignature" accept="image/*"
+                                style="position: absolute; opacity: 0; width: 100%; height: 100%; cursor: pointer; z-index: 10;"
+                                onchange="loadImage(event, 'verifierSigImg', 'verifierSigPlaceholder')">
+                            <div style="width: 100%; height: 60px; border: 1px solid black; background: white; display: flex; align-items: center; justify-content: center; cursor: pointer; position: relative;"
+                                onclick="document.getElementById('verifierSignature').click()">
+                                <img id="verifierSigImg" style="max-width: 100%; max-height: 100%; display: none;">
+                                <span id="verifierSigPlaceholder" style="color: #999; font-size: 8pt;">Click to upload
+                                    signature</span>
+                            </div>
+                        </div>
+                        <div class="small-text" style="margin-top: 5px;">(Verifier must put his/ her Name, if stamp is
+                            not available)</div>
+                    </td>
+                </tr>
+            </table>
+
+            <!-- Footer Section -->
+            <div style="margin-top: 10px; border: 1px solid black; padding: 8px; background: #f0f0f0;">
+                <div class="form-row">
+                    <span class="bold">To be filled by the Enrolment Agency only:</span>
+                </div>
+                <div class="form-row" style="margin-top: 5px;">
+                    <span class="field-label">Date & time of Enrolment:</span>
+                    <input type="text" name="enrolment_datetime" class="input-box">
+                </div>
+            </div>
+
+            <div class="small-text" style="margin-top: 8px;">
+                * In case of NRI, only Indian Passport will be valid as POI.
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function loadImage(event, imgId, placeholderId) {
+            const file = event.target.files[0];
+            const img = document.getElementById(imgId);
+            const placeholder = document.getElementById(placeholderId);
+
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    img.src = e.target.result;
+                    img.style.display = 'block';
+                    placeholder.style.display = 'none';
+                }
+                reader.readAsDataURL(file);
+            }
+        }
+    </script>
+</body>
+
+</html>

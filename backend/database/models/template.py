@@ -16,11 +16,12 @@ class Template(Base):
     Attributes:
         id: Primary key
         user_id: Foreign key to User
-        pdf_path: Path to the template file (PDF)
+        template_path: Path to the template file (HTML or PDF)
         file_hash: Hash of the template file for integrity
         lang: Language of the template
+        template_type: Type of template ('html' or 'pdf')
         form_fields: JSON field storing form field metadata
-        pdf_data: Extracted pdf data for additional informations (incase fields missed the checkbox, radio keys)
+        html_structure: Parsed HTML structure with field mappings
     """
     __tablename__ = "templates"
     
@@ -28,15 +29,16 @@ class Template(Base):
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     
     # Fields
-    pdf_path: Mapped[str] = mapped_column(Text, nullable=False)
+    template_path: Mapped[str] = mapped_column(Text, nullable=False)
     file_hash: Mapped[str] = mapped_column(String(64), unique=True, nullable=False, index=True)
     lang: Mapped[Optional[str]] = mapped_column(String(10), nullable=True)
+    template_type: Mapped[str] = mapped_column(String(10), default='html', nullable=False)  # 'html' or 'pdf'
     form_fields: Mapped[Optional[dict]] = mapped_column(Text, nullable=True)  # JSON stored as text
-    pdf_data: Mapped[Optional[dict]] = mapped_column(Text, nullable=True)  # JSON stored as text
+    html_structure: Mapped[Optional[dict]] = mapped_column(Text, nullable=True)  # Parsed HTML structure
     created_at: Mapped[datetime.datetime] = mapped_column(default=datetime.datetime.now(datetime.timezone.utc), nullable=False)
     
-    # Forigen key entity id
+    # Foreign key to user
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
 
     def __repr__(self) -> str:
-        return f"<Template(id={self.id}, file_hash='{self.file_hash}', lang='{self.lang}')>"
+        return f"<Template(id={self.id}, file_hash='{self.file_hash}', type='{self.template_type}', lang='{self.lang}')>"
