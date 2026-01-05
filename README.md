@@ -28,9 +28,9 @@ A web-based application that enables users to:
 
 ## 🔄 Application Flow
 
-\`\`\`
+```
 User Sign Up → Create Entity → Upload Documents → Select Template → Auto-Fill Form → Review & Download
-\`\`\`
+```
 
 ---
 
