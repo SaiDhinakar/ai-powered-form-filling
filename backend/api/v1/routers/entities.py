@@ -12,7 +12,7 @@ from database.repository import EntityRepository
 from api.v1.models import User
 from api.v1.routers.auth import get_current_user
 
-router = APIRouter(prefix="/entities", tags=["entities"])
+router = APIRouter(tags=["entities"])
 
 @router.get("/")
 async def list_entities(

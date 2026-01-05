@@ -47,10 +47,17 @@ async def create_template(
     file_content = await file.read()
     file_hash = hashlib.sha256(file_content).hexdigest()
 
-    # If file with hash exists, return existing
+    # If file with hash exists for this user, return existing
     existing_template = TemplateRepository.get_by_hash(db, file_hash)
-    if existing_template and existing_template.user_id == user.id:
-        return {"template": existing_template.__dict__}
+    if existing_template:
+        if existing_template.user_id == user.id:
+            return {"template": existing_template.__dict__}
+        else:
+            # Template exists but belongs to another user
+            raise HTTPException(
+                status_code=409, 
+                detail="This template has already been uploaded. Please use a different file or modify the template."
+            )
 
     # Prepare directory
     user_dir = Path(settings.UPLOAD_FILE_PATH) / "templates" / str(user.id)
