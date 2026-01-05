@@ -30,7 +30,7 @@ export default function Templates() {
   const fetchTemplates = async () => {
     try {
       setIsLoading(true);
-      const response = await api.get('/templates/template');
+      const response = await api.get('/templates/');
       // Backend returns { templates: [...] }
       setTemplates(response.data.templates || []);
     } catch (error) {
@@ -62,7 +62,7 @@ export default function Templates() {
         formData.append('file', file);
         formData.append('lang', uploadLanguage); // Signature: create_template(file: UploadFile, lang: str = Form(None))
 
-        await api.post('/templates/template', formData, {
+        await api.post('/templates', formData, {
           headers: {
             'Content-Type': 'multipart/form-data',
           }
@@ -85,7 +85,7 @@ export default function Templates() {
     try {
       // Signature: delete_template(template_id: int)
       // Standard DELETE usually passes params in query if simple arg
-      await api.delete('/templates/template', {
+      await api.delete('/templates', {
         params: { template_id: id }
       });
       setTemplates(templates.filter((t) => t.id !== id));
@@ -98,7 +98,7 @@ export default function Templates() {
 
   // Kept for potential future editing
   const handleLanguageChange = (id, newLanguage) => {
-    // api.put('/templates/template') exists but takes form data.
+    // api.put('/templates') exists but takes form data.
     // It's complicated to just update lang without re-uploading file logic in current backend logic (it expects File(None)).
     // I'll skip implementing this inline update for now to avoid complexity unless requested.
     toast.error("Updating language is not supported by backend yet.");
@@ -123,7 +123,7 @@ export default function Templates() {
   const handlePreview = async (templateId) => {
     // Calling preview_template endpoint which returns JSON { html, fields }
     try {
-      const response = await api.get(`/templates/template/${templateId}/preview`);
+      const response = await api.get(`/templates/${templateId}/preview`);
       // We can't use the same DocumentPreview component easily because it expects a Blob/File object with type.
       // But we can construct a fake file object or adapt.
       // For now, let's just create a blob from the HTML content and show it.

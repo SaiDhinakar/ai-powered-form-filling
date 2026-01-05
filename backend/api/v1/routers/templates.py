@@ -18,7 +18,7 @@ router = APIRouter(tags=["Templates"])
 
 
 # List all templates for the user
-@router.get("/template")
+@router.get("/")
 def get_templates(
     limit: int = 10,
     skip: int = 0,
@@ -36,7 +36,7 @@ def get_templates(
         results.append(t_dict)
     return {"templates": results}
 
-@router.post("/template")
+@router.post("/")
 async def create_template(
     file: UploadFile = File(...),
     lang: str = Form(None),
@@ -55,17 +55,16 @@ async def create_template(
     file_content = await file.read()
     file_hash = hashlib.sha256(file_content).hexdigest()
 
-    # If file with hash exists for this user, return existing
+    # Check if file with same hash exists for THIS user only
     existing_template = TemplateRepository.get_by_hash(db, file_hash)
+    if existing_template and existing_template.user_id == user.id:
+        # Same file already uploaded by this user - return existing
+        return {"template": existing_template.__dict__}
+    
+    # If template exists for another user, create a unique hash for this user
     if existing_template:
-        if existing_template.user_id == user.id:
-            return {"template": existing_template.__dict__}
-        else:
-            # Template exists but belongs to another user
-            raise HTTPException(
-                status_code=409, 
-                detail="This template has already been uploaded. Please use a different file or modify the template."
-            )
+        # Append user_id to create unique hash per user
+        file_hash = hashlib.sha256(f"{file_hash}_{user.id}".encode()).hexdigest()
 
     # Prepare directory
     user_dir = Path(settings.UPLOAD_FILE_PATH) / "templates" / str(user.id)
@@ -117,7 +116,7 @@ async def create_template(
 
 
 # Update template file or metadata
-@router.put("/template")
+@router.put("/")
 async def update_template(
     template_id: int = Form(...),
     file: UploadFile = File(None),
@@ -192,7 +191,7 @@ async def update_template(
 
 
 # Delete template and its file
-@router.delete("/template")
+@router.delete("/")
 def delete_template(
     template_id: int,
     user=Depends(get_current_user),
@@ -212,7 +211,7 @@ def delete_template(
     return {"message": "Template deleted"}
 
 
-@router.get("/template/{template_id}/preview")
+@router.get("/{template_id}/preview")
 def preview_template(
     template_id: int,
     user=Depends(get_current_user),

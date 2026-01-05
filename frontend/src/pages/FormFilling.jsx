@@ -22,7 +22,7 @@ export default function FormFilling() {
       try {
         const [entRes, tmplRes] = await Promise.all([
           api.get('/entities/'),
-          api.get('/templates/template')
+          api.get('/templates')
         ]);
         setEntities(entRes.data);
         setTemplates(tmplRes.data.templates || []);
