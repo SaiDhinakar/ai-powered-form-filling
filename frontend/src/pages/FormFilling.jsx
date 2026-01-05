@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Check, CaretDown, CaretUp, X, Download, FileHtml, Eye } from 'phosphor-react';
+import { Check, CaretDown, CaretUp, X, Download, FileHtml, Eye, FilePdf } from 'phosphor-react';
 import toast from 'react-hot-toast';
 import api from '../services/api';
 
@@ -15,6 +15,12 @@ export default function FormFilling() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showResult, setShowResult] = useState(false);
   const [filledResult, setFilledResult] = useState(null);
+  
+  // Preview state
+  const [showPreview, setShowPreview] = useState(false);
+  const [previewHtml, setPreviewHtml] = useState('');
+  const [isLoadingPreview, setIsLoadingPreview] = useState(false);
+  const previewRef = useRef(null);
 
   // Load selections from backend
   useEffect(() => {
@@ -117,6 +123,7 @@ export default function FormFilling() {
   const handlePreviewHTML = async () => {
     if (!filledResult) return;
 
+    setIsLoadingPreview(true);
     try {
       const pathParts = filledResult.filled_html_path.split('/');
       const filename = pathParts[pathParts.length - 1];
@@ -124,14 +131,68 @@ export default function FormFilling() {
       const userId = userRes.data.id;
 
       const response = await api.get(`/form-fill/${userId}/${filename}`, {
-        responseType: 'text' // We want HTML text
+        responseType: 'text'
       });
 
-      const newWindow = window.open();
-      newWindow.document.write(response.data);
-      newWindow.document.close();
+      setPreviewHtml(response.data);
+      setShowPreview(true);
     } catch (error) {
-      toast.error("Failed to open preview");
+      toast.error("Failed to load preview");
+    } finally {
+      setIsLoadingPreview(false);
+    }
+  };
+
+  const handleDownloadPDF = async () => {
+    if (!previewHtml && !filledResult) return;
+
+    const toastId = toast.loading("Generating PDF...");
+    
+    try {
+      // Dynamically import html2pdf
+      const html2pdf = (await import('html2pdf.js')).default;
+      
+      // If we don't have preview HTML yet, fetch it
+      let htmlContent = previewHtml;
+      if (!htmlContent) {
+        const pathParts = filledResult.filled_html_path.split('/');
+        const filename = pathParts[pathParts.length - 1];
+        const userRes = await api.get('/auth/me');
+        const userId = userRes.data.id;
+        const response = await api.get(`/form-fill/${userId}/${filename}`, {
+          responseType: 'text'
+        });
+        htmlContent = response.data;
+      }
+
+      // Create a temporary container for the HTML
+      const container = document.createElement('div');
+      container.innerHTML = htmlContent;
+      container.style.width = '210mm'; // A4 width
+      document.body.appendChild(container);
+
+      // Get template name for filename
+      const template = templates.find(t => t.id == selectedTemplate);
+      const entity = entities.find(e => e.id == selectedEntityId);
+      const pdfFilename = `${template?.name || 'form'}_${entity?.name || 'entity'}.pdf`;
+
+      // Generate PDF
+      const opt = {
+        margin: 10,
+        filename: pdfFilename,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      };
+
+      await html2pdf().set(opt).from(container).save();
+      
+      // Clean up
+      document.body.removeChild(container);
+      toast.success("PDF downloaded!", { id: toastId });
+    } catch (error) {
+      console.error("PDF generation failed", error);
+      toast.error("Failed to generate PDF", { id: toastId });
     }
   };
 
@@ -266,63 +327,88 @@ export default function FormFilling() {
 
         </div>
 
-        {/* RIGHT COLUMN: RESULTS */}
+        {/* RIGHT COLUMN: RESULTS & PREVIEW */}
         <AnimatePresence>
           {showResult && filledResult && (
             <motion.div
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: 20 }}
-              className="bg-[#FDFEFF] border border-[#E6E8EB] rounded-3xl p-8 shadow-sm sticky top-10"
+              className="space-y-6"
             >
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-[#D1FAE5] flex items-center justify-center text-[#059669]">
-                    <Check size={20} weight="bold" />
-                  </div>
-                  <div>
-                    <h2 className="text-xl font-semibold text-[#0F172A]">Success!</h2>
-                    <p className="text-xs text-[#64748B]">Form filled successfully</p>
-                  </div>
-                </div>
-                <button
-                  onClick={() => setShowResult(false)}
-                  className="text-[#94A3B8] hover:text-[#0F172A]"
-                >
-                  <X size={20} />
-                </button>
-              </div>
-
-              <div className="mb-6 space-y-3">
-                <button
-                  onClick={handlePreviewHTML}
-                  className="w-full h-12 rounded-xl border border-[#E2E8F0] flex items-center justify-center gap-2 text-[#0F172A] font-medium hover:bg-[#F8FAFC] transition"
-                >
-                  <Eye size={20} />
-                  Preview HTML
-                </button>
-                <button
-                  onClick={handleDownload}
-                  className="w-full h-12 rounded-xl bg-[#2563EB] text-white flex items-center justify-center gap-2 font-medium hover:bg-[#1D4ED8] transition"
-                >
-                  <Download size={20} />
-                  Download HTML
-                </button>
-              </div>
-
-              <div className="border-t border-[#F1F5F9] pt-6">
-                <h3 className="text-sm font-semibold text-[#475569] mb-4">Extracted & Filled Fields</h3>
-                <div className="max-h-[400px] overflow-y-auto space-y-3 pr-2 scrollbar-thin">
-                  {Object.entries(filledResult.filled_data || {}).map(([key, value]) => (
-                    <div key={key} className="text-sm">
-                      <span className="block text-[#64748B] text-xs uppercase tracking-wide font-semibold mb-1">{key}</span>
-                      <div className="p-3 bg-[#F8FAFC] rounded-lg text-[#0F172A] border border-[#E2E8F0] break-words">
-                        {typeof value === 'object' ? JSON.stringify(value) : String(value)}
-                      </div>
+              {/* Success Card */}
+              <div className="bg-[#FDFEFF] border border-[#E6E8EB] rounded-3xl p-8 shadow-sm">
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-[#D1FAE5] flex items-center justify-center text-[#059669]">
+                      <Check size={20} weight="bold" />
                     </div>
-                  ))}
+                    <div>
+                      <h2 className="text-xl font-semibold text-[#0F172A]">Success!</h2>
+                      <p className="text-xs text-[#64748B]">Form filled successfully</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setShowResult(false);
+                      setShowPreview(false);
+                      setPreviewHtml('');
+                    }}
+                    className="text-[#94A3B8] hover:text-[#0F172A]"
+                  >
+                    <X size={20} />
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    onClick={handlePreviewHTML}
+                    disabled={isLoadingPreview}
+                    className="h-12 rounded-xl border border-[#E2E8F0] flex items-center justify-center gap-2 text-[#0F172A] font-medium hover:bg-[#F8FAFC] transition disabled:opacity-50"
+                  >
+                    <Eye size={20} />
+                    {isLoadingPreview ? 'Loading...' : (showPreview ? 'Refresh Preview' : 'Preview Form')}
+                  </button>
+                  <button
+                    onClick={handleDownloadPDF}
+                    className="h-12 rounded-xl bg-[#2563EB] text-white flex items-center justify-center gap-2 font-medium hover:bg-[#1D4ED8] transition"
+                  >
+                    <FilePdf size={20} />
+                    Download PDF
+                  </button>
                 </div>
               </div>
+
+              {/* In-Page Preview */}
+              {showPreview && previewHtml && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="bg-[#FDFEFF] border border-[#E6E8EB] rounded-3xl p-6 shadow-sm"
+                >
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold text-[#0F172A]">Form Preview</h3>
+                    <button
+                      onClick={() => setShowPreview(false)}
+                      className="text-[#94A3B8] hover:text-[#0F172A] text-sm"
+                    >
+                      Hide Preview
+                    </button>
+                  </div>
+                  <div 
+                    ref={previewRef}
+                    className="border border-[#E2E8F0] rounded-xl overflow-hidden bg-white"
+                    style={{ maxHeight: '600px', overflowY: 'auto' }}
+                  >
+                    <iframe
+                      srcDoc={previewHtml}
+                      title="Form Preview"
+                      className="w-full"
+                      style={{ minHeight: '600px', border: 'none' }}
+                    />
+                  </div>
+                </motion.div>
+              )}
             </motion.div>
           )}
         </AnimatePresence>
