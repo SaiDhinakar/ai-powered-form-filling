@@ -1,4 +1,5 @@
 from fastapi import FastAPI, Depends
+from fastapi.middleware.cors import CORSMiddleware
 from pathlib import Path
 import sys
 
@@ -14,12 +15,10 @@ init_db()
 
 app = FastAPI(title="AI Powered Form Filling API", version="1.0.0")
 
-from fastapi.middleware.cors import CORSMiddleware
-
-# Enable CORS
+# # Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:3000"], # Allow Frontend
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
