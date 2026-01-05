@@ -77,15 +77,15 @@ Review the auto-filled form before downloading.
 
 ## 🏗️ Architecture Overview
 
-\`\`\`
+```
 Document Upload → OCR Processing → Entity Extraction → AI Form Mapping → Filled Form Output
-\`\`\`
+```
 
 ---
 
 ## 📦 Project Structure
 
-\`\`\`
+```
 ├── backend/          # FastAPI backend with AI agents
 │   ├── api/          # REST API endpoints
 │   ├── ai_agents/    # AI agent for form mapping
@@ -93,13 +93,13 @@ Document Upload → OCR Processing → Entity Extraction → AI Form Mapping →
 │   └── scripts/      # Automation scripts
 ├── frontend/         # React-based web interface
 └── snapshots/        # Application screenshots
-\`\`\`
+```
 
 ---
 
 ## 🚀 Quick Start
 
-\`\`\`bash
+```bash
 
 # Backend
 
@@ -112,7 +112,7 @@ uv sync
 cd frontend
 npm install
 npm run dev
-\`\`\`
+```
 
 ---
 
