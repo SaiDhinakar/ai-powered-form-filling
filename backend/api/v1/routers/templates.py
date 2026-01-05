@@ -26,7 +26,15 @@ def get_templates(
     db: Session = Depends(get_db)
 ):
     templates = TemplateRepository.get_all(db, user.id, skip=skip, limit=limit)
-    return {"templates": [template.__dict__ for template in templates]}
+    results = []
+    for t in templates:
+        t_dict = t.__dict__.copy() 
+        # Ensure name or filename is available
+        if 'name' not in t_dict or not t_dict['name']:
+            t_dict['name'] = Path(t.template_path).name
+        t_dict['filename'] = Path(t.template_path).name
+        results.append(t_dict)
+    return {"templates": results}
 
 @router.post("/template")
 async def create_template(
@@ -62,7 +70,18 @@ async def create_template(
     # Prepare directory
     user_dir = Path(settings.UPLOAD_FILE_PATH) / "templates" / str(user.id)
     user_dir.mkdir(parents=True, exist_ok=True)
-    file_path = user_dir / f"{file_hash}.html"
+    
+    # Use filename, handle collisions
+    file_path = user_dir / file.filename
+    if file_path.exists():
+        # Append hash suffix if file exists to prevent collision
+        # But if it's the exact same file (hash check passed earlier but we are here), it means we are uploading a new file with same hash?
+        # No, hash check earlier returns existing_template if found. 
+        # So here we have a NEW file (different content/hash) but SAME filename.
+        # We must rename to avoid overwriting the existing different file.
+        stem = Path(file.filename).stem
+        suffix = Path(file.filename).suffix
+        file_path = user_dir / f"{stem}_{file_hash[:8]}{suffix}"
     
     # Save file
     with open(file_path, "wb") as f:
@@ -88,6 +107,7 @@ async def create_template(
         user_id=user.id,
         path=str(file_path),
         file_hash=file_hash,
+        name=file.filename,
         lang=lang or 'en',
         template_type='html',
         form_fields=form_fields,
@@ -125,7 +145,16 @@ async def update_template(
         new_file_hash = hashlib.sha256(file_content).hexdigest()
         user_dir = Path(settings.UPLOAD_FILE_PATH) / "templates" / str(user.id)
         user_dir.mkdir(parents=True, exist_ok=True)
-        new_file_path = user_dir / f"{new_file_hash}.html"
+        
+        # Use filename, handle collisions
+        new_file_path = user_dir / file.filename
+        if new_file_path.exists() and str(new_file_path) != file_path:
+             # If exists and is NOT the current file we are updating (unlikely if name changed, but possible)
+             # OR if we are updating content but filename is same as another existing file?
+             # To be safe, if it exists, append hash.
+             stem = Path(file.filename).stem
+             suffix = Path(file.filename).suffix
+             new_file_path = user_dir / f"{stem}_{new_file_hash[:8]}{suffix}"
         
         with open(new_file_path, "wb") as f:
             f.write(file_content)

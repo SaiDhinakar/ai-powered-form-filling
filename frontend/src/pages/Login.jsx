@@ -1,17 +1,36 @@
 import { useState } from 'react';
+import api from '../services/api';
+import toast from 'react-hot-toast';
 
 export default function Login({ onLogin }) {
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState(''); // Backend expects 'username' in UserCreate/UserResponse but POST /login uses UserCreate which has username/password.
+  // Wait, backend /login route uses UserCreate pydantic model but typically OAuth2PasswordRequestForm expects username/password form data.
+  // Let's check auth.py: @router.post("/login", response_model=Token) async def login_for_access_token(user: UserCreate, ...):
+  // It uses UserCreate model as JSON body! So { "username": "...", "password": "..." } is correct.
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
-    setTimeout(() => {
-      onLogin();
+
+    try {
+      const response = await api.post('/auth/login', {
+        username: username,
+        password: password,
+      });
+
+      const { access_token } = response.data;
+      localStorage.setItem('access_token', access_token);
+      toast.success('Successfully logged in');
+      onLogin(); // Update parent state to show protected routes
+    } catch (error) {
+      console.error('Login error:', error);
+      const msg = error.response?.data?.detail || 'Failed to login';
+      toast.error(msg);
+    } finally {
       setIsLoading(false);
-    }, 800);
+    }
   };
 
   return (
@@ -74,16 +93,16 @@ export default function Login({ onLogin }) {
                 Sign in
               </h2>
               <p className="mt-2 text-base text-[#64748B]">
-                Use your organization email
+                Use your organization username
               </p>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-7">
               <input
-                type="email"
-                placeholder="name@company.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                type="text"
+                placeholder="Username (e.g. admin)"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
                 disabled={isLoading}
                 required
                 className="

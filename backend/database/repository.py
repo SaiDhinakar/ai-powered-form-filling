@@ -117,6 +117,7 @@ class TemplateRepository:
         user_id: int,
         path: str,
         file_hash: str,
+        name: str = None,
         lang: Optional[str] = None,
         template_type: str = 'html',
         form_fields: Optional[dict] = None,
@@ -128,6 +129,7 @@ class TemplateRepository:
             user_id=user_id,
             template_path=path,
             file_hash=file_hash,
+            name=name,
             lang=lang,
             template_type=template_type,
             form_fields=json.dumps(form_fields) if form_fields is not None else None,
@@ -151,7 +153,7 @@ class TemplateRepository:
     @staticmethod
     def get_all(db: Session, user_id: int, skip: int = 0, limit: int = 10) -> List[Template]:
         """Get all templates with pagination."""
-        return db.query(Template).filter(Template.user_id == user_id).offset(skip).limit(limit).all()
+        return db.query(Template).filter(Template.user_id == user_id).order_by(Template.created_at.desc()).offset(skip).limit(limit).all()
     
     @staticmethod
     def delete(db: Session, template_id: int) -> bool:
