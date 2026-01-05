@@ -16,6 +16,7 @@ class Template(Base):
     Attributes:
         id: Primary key
         user_id: Foreign key to User
+        name: Name of the template (filename or custom)
         template_path: Path to the template file (HTML or PDF)
         file_hash: Hash of the template file for integrity
         lang: Language of the template
