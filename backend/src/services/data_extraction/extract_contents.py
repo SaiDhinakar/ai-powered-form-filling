@@ -203,6 +203,7 @@ def extract_and_save_organize_data(db_session, user_id: int, entity_id: int, fil
     
     except Exception as e:
         print(f"Error during extraction and saving: {e}")
+        raise e
 
 if __name__ == "__main__":
     from database.base import SessionLocal

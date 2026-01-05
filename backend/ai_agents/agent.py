@@ -122,7 +122,11 @@ Extract all data as flat JSON."""
     
     try:
         response = extraction_model.generate_content(prompt)    
-        response_text = response.text.strip()
+        try:
+            response_text = response.text.strip()
+        except ValueError:
+            print(f"[WARN] detailed response logs: {response.prompt_feedback}")
+            raise ValueError("AI Model blocked the response or returned empty content.")
         
         # Remove markdown code blocks if present
         if response_text.startswith("```"):
@@ -187,7 +191,12 @@ Fill form fields using entity data. Return JSON only."""
     
     try:
         response = form_fill_model.generate_content(prompt)
-        response_text = response.text.strip()
+        try:
+            response_text = response.text.strip()
+        except ValueError:
+            # Handle cases where response is blocked or empty
+            print(f"[WARN] detailed response logs: {response.prompt_feedback}")
+            raise ValueError("AI Model blocked the response or returned empty content.")
         
         # Remove markdown code blocks if present
         if response_text.startswith("```"):

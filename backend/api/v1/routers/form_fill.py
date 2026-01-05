@@ -90,26 +90,30 @@ def form_fill(
     print(f"[DEBUG] Form fields to fill: {list(form_fields_map.keys())}")
 
     # Call AI agent to map entity data to form fields
-    try:
-        response = requests.post(
-            url=f"{settings.AGENTS_API_ENDPOINT}/fill-form/",
-            json={
-                "form_fields_map": form_fields_map,
-                "template_lang": template_lang,
-                "entity_data": entity_data
-            },
-            timeout=120
-        )
+    if not entity_data:
+        print("[INFO] Entity data is empty, skipping AI agent and returning empty form keys.")
+        filled_form_data = {key: "" for key in form_fields_map.keys()}
+    else:
+        try:
+            response = requests.post(
+                url=f"{settings.AGENTS_API_ENDPOINT}/fill-form/",
+                json={
+                    "form_fields_map": form_fields_map,
+                    "template_lang": template_lang,
+                    "entity_data": entity_data
+                },
+                timeout=120
+            )
 
-        if response.status_code != 200:
-            raise ValueError(f"Error from AI agent: {response.text}")
+            if response.status_code != 200:
+                raise ValueError(f"Error from AI agent: {response.text}")
 
-        filled_form_data = response.json().get("filled_form", {})
-        print(f"Form data to fill: {filled_form_data}")
+            filled_form_data = response.json().get("filled_form", {})
+            print(f"Form data to fill: {filled_form_data}")
 
-    except Exception as e:
-        print(f"Error calling AI agent: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to process form data: {str(e)}")
+        except Exception as e:
+            print(f"Error calling AI agent: {e}")
+            raise HTTPException(status_code=500, detail=f"Failed to process form data: {str(e)}")
 
     # Validate filled data
     validation_warnings = []

@@ -39,55 +39,65 @@ def extract_text_from_pdf_or_img_with_metadata(file_path, lang: str) -> dict:
             doc = fitz.open(file_path)
             result['num_pages'] = len(doc)
             text_content = []
-            print(f"Extracting text from PDF: {file_path} with lang={lang}")
-            if lang == 'en':
-                result['metadata'] = doc.metadata
-                for page in doc:
-                    text = page.get_text()
-                    if text:
-                        text_content.append(text)
-                
-                result['text'] = '\n'.join(text_content)
+            # Attempt standard text extraction first (fast)
+            text_content = []
+            result['metadata'] = doc.metadata
+            for page in doc:
+                text = page.get_text()
+                if text:
+                    text_content.append(text)
+            
+            extracted_text = '\n'.join(text_content).strip()
+            
+            # If text is sufficient, return it
+            if len(extracted_text) > 50:
+                print(f"Extracted text using PyMuPDF (length: {len(extracted_text)})")
+                result['text'] = extracted_text
                 doc.close()
-            else:            
-                print(f"Using OCR service at {ocr_url} for non-English extraction")
-                # Extract each page as an image and send to OCR service
-                for page_num in range(len(doc)):
-                    page = doc[page_num]
+                return result
+            
+            print(f"Insufficient text found ({len(extracted_text)} chars). Falling back to OCR.")
+            
+            # Fallback to OCR service
+            print(f"Using OCR service at {ocr_url}")
+            text_content = [] # Reset
+            
+            # Extract each page as an image and send to OCR service
+            for page_num in range(len(doc)):
+                page = doc[page_num]
+                
+                # Convert page to image (PNG format)
+                pix = page.get_pixmap(matrix=fitz.Matrix(2, 2))  # 2x zoom for better quality
+                img_bytes = pix.tobytes("png")
+                
+                # Prepare the file for upload
+                files = {
+                    'file': (f'page_{page_num}.png', io.BytesIO(img_bytes), 'image/png')
+                }
+                
+                params = {
+                    'lang': lang, # Pass the requested language (e.g., 'en')
+                    'min_confidence': 0.7
+                }
+                
+                try:
+                    # Call OCR service
+                    response = requests.post(ocr_url, files=files, params=params, timeout=120)
                     
-                    # Convert page to image (PNG format)
-                    pix = page.get_pixmap(matrix=fitz.Matrix(2, 2))  # 2x zoom for better quality
-                    img_bytes = pix.tobytes("png")
-                    
-                    # Prepare the file for upload
-                    files = {
-                        'file': (f'page_{page_num}.png', io.BytesIO(img_bytes), 'image/png')
-                    }
-                    
-                    params = {
-                        'lang': lang,
-                        'min_confidence': 0.7
-                    }
-                    
-                    try:
-                        # Call OCR service
-                        response = requests.post(ocr_url, files=files, params=params, timeout=120)
+                    if response.status_code == 200:
+                        ocr_result = response.json()
+                        if 'extracted_text' in ocr_result and ocr_result['extracted_text']:
+                            text_content.append(ocr_result['extracted_text'])
+                            print(f"Page {page_num + 1}: Extracted {ocr_result.get('metadata', {}).get('total_detections', 0)} text blocks")
+                    else:
+                        print(f"Warning: OCR failed for page {page_num + 1} with status {response.status_code}")
                         
-                        if response.status_code == 200:
-                            ocr_result = response.json()
-                            # The OCR endpoint returns: {"extracted_text": str, "details": list, "metadata": dict}
-                            if 'extracted_text' in ocr_result and ocr_result['extracted_text']:
-                                text_content.append(ocr_result['extracted_text'])
-                                print(f"Page {page_num + 1}: Extracted {ocr_result.get('metadata', {}).get('total_detections', 0)} text blocks")
-                        else:
-                            print(f"Warning: OCR failed for page {page_num + 1} with status {response.status_code}")
-                            
-                    except requests.exceptions.RequestException as e:
-                        print(f"Warning: Failed to connect to OCR service for page {page_num + 1}: {str(e)}")
-                
-                result['text'] = '\n'.join(text_content)
-                doc.close()
-                
+                except requests.exceptions.RequestException as e:
+                    print(f"Warning: Failed to connect to OCR service for page {page_num + 1}: {str(e)}")
+            
+            result['text'] = '\n'.join(text_content)
+            doc.close()
+            
             return result
         
         except Exception as e:

@@ -1,7 +1,8 @@
-from typing import List, Optional, Optional
+from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status
 from pathlib import Path
 import sys
+import os
 
 # Add backend directory to Python path
 backend_dir = Path(__file__).parent.parent.parent
@@ -11,6 +12,7 @@ from database.session import get_db, Session
 from database.repository import EntityRepository
 from api.v1.models import User
 from api.v1.routers.auth import get_current_user
+from config import settings
 
 router = APIRouter(tags=["entities"])
 
@@ -42,6 +44,34 @@ def _attach_documents(entity, user_id: int):
                 })
     
     entity_dict["documents"] = documents
+    return entity_dict
+
+def _attach_documents(entity, user_id: int):
+    """
+    Attach list of documents associated with the entity.
+    Scans the upload directory for the entity.
+    """
+    entity_dict = entity.__dict__.copy()
+    if '_sa_instance_state' in entity_dict:
+        del entity_dict['_sa_instance_state']
+    
+    docs = []
+    # Path structure: uploads/user_id/entity_id/filename
+    entity_dir = Path(settings.UPLOAD_FILE_PATH) / str(user_id) / str(entity.id)
+    
+    if entity_dir.exists():
+        for f in entity_dir.iterdir():
+            if f.is_file() and not f.name.startswith('.'):
+                docs.append({
+                    "id": f.name, # Use filename as pseudo-ID
+                    "name": f.name,
+                    "filename": f.name,
+                    "type": "application/pdf" if f.suffix.lower() == ".pdf" else "image/jpeg",
+                    "language": "en", # Default as we don't store per-file lang metadata in easily accessible way yet
+                    "size": f.stat().st_size
+                })
+    
+    entity_dict['documents'] = docs
     return entity_dict
 
 @router.get("/")
